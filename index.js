@@ -353,7 +353,7 @@ const start = () => {
     }
 };
 
-// Импортируем функцию
+// Тесты
 //if (require.main === module) {
     start();
 //}
