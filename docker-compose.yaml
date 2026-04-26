@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # 1. Сервис с базой данных MySQL
+  mysql_db:
+    image: mysql:8.0
+    container_name: my_diploma_db
+    # Переменные для инициализации БД
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: my_diploma_db
+      MYSQL_USER: my_user
+      MYSQL_PASSWORD: my_password
+    # Проброс порта: внешний_порт:внутренний_порт
+    ports:
+      - "3307:3306"     # Внешний порт 3307, чтобы не конфликтовать с локальной MySQL[reference:2]
+    # Сохраняем данные БД на диске (чтобы они не пропадали при перезапуске)
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  # 2. Сервис с Node.js приложением
+  node_app:
+    build: .
+    container_name: my_diploma_app
+    # Пробрасываем порт 3000 из контейнера на хост-машину
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    # Переменные окружения для подключения к БД из приложения
+    environment:
+      DB_HOST: mysql_db
+      DB_USER: root
+      DB_PASSWORD: root_password
+      DB_DATABASE: my_diploma_db
+      DB_PORT: 3306
+    networks:
+      - app_network
+
+# Определяем сеть для связи контейнеров
+networks:
+  app_network:
+    driver: bridge
+
+# Определяем том для долговременного хранения данных MySQL
+volumes:
+  mysql_data:

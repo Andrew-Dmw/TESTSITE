@@ -1,0 +1,9 @@
+    {
+      "devtoolsFrontendUrl": "chrome-devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=localhost:9229/devtools/page/...",
+      "faviconUrl": "http://localhost:3000/favicon.ico",
+      "id": "some-unique-id",
+      "title": "My Express App (Debugging)",
+      "type": "node",
+      "url": "http://localhost:3000",
+      "webSocketDebuggerUrl": "ws://127.0.0.1:9229/5cc0bc2b-ec7a-42f1-af63-2926860e790d"
+    }
