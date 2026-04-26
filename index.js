@@ -12,6 +12,8 @@ const rateLimit = require("express-rate-limit");
 const helmet = require('helmet');
 const { title } = require('process');
 const cors = require('cors');
+const https = require('https');
+const fs = require('fs');
 
 
 const app = express();
@@ -332,13 +334,15 @@ app.use((req, res, next) => {
     res.status(404).render('404', { title: 'Страница не найдена' });
 });
 
-// Function to start the server
-initDb().catch(console.error);
-
 const start = () => {
     try {
-        app.listen(PORT, HOSTNAME, () => {
-            console.log(`Server started on: http://localhost:${PORT}`);
+        const sslOptions = {
+            key: fs.readFileSync(path.join(__dirname, 'ssl', 'key.pem')),
+            cert: fs.readFileSync(path.join(__dirname, 'ssl', 'cert.pem'))
+        };
+        const server = https.createServer(sslOptions, app);
+        server.listen(PORT, HOSTNAME, () => {
+            console.log(`✅ HTTPS Server started on: https://${HOSTNAME}:${PORT}`);
             console.log(`Process PID: ${process.pid}`);
             logger.info('server start');
         });
@@ -350,7 +354,7 @@ const start = () => {
 };
 
 // Импортируем функцию
-if (require.main === module) {
+//if (require.main === module) {
     start();
-}
-module.exports = app;
+//}
+//module.exports = app;

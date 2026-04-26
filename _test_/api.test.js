@@ -1,9 +1,6 @@
 const request = require('supertest');
 const app = require('../index');
 
-const request = require('supertest');
-const app = require('../app'); // ваш экспортированный app
-
 describe('Формально-юридическая модель - API тесты', () => {
     // 1. Тест отзыва согласия
     describe('POST /revoke-consent', () => {
