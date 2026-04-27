@@ -342,7 +342,7 @@ const start = () => {
         };
         const server = https.createServer(sslOptions, app);
         server.listen(PORT, HOSTNAME, () => {
-            console.log(`✅ HTTPS Server started on: https://${HOSTNAME}:${PORT}`);
+            console.log(`✅ HTTPS Server started on: https://localhost:${PORT}`);
             console.log(`Process PID: ${process.pid}`);
             logger.info('server start');
         });

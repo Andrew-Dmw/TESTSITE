@@ -45,6 +45,20 @@ services:
       DB_PORT: 3306
     networks:
       - app_network
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: my_phpmyadmin
+    ports:
+      - "8080:80"                     # на хосте будет доступен на порту 8080
+    environment:
+      PMA_HOST: mysql_db              # имя сервиса MySQL
+      PMA_PORT: 3306                  # внутренний порт MySQL
+      PMA_ARBITRARY: 1                # разрешить подключение к любому хосту (опционально)
+      UPLOAD_LIMIT: 300M              # лимит загружаемых файлов
+    depends_on:
+      - mysql_db                      # ждём запуска MySQL
+    networks:
+      - app_network                   # та же сеть, что и у MySQL
 
 # Определяем сеть для связи контейнеров
 networks:
