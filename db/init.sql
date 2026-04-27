@@ -1,3 +1,7 @@
+-- Определение кодировки
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+
 -- Таблица отзывов
 CREATE TABLE IF NOT EXISTS reviews (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -6,7 +10,7 @@ CREATE TABLE IF NOT EXISTS reviews (
     favorite_section VARCHAR(255),
     comment TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Таблица пользователей
 CREATE TABLE IF NOT EXISTS users (
@@ -14,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL UNIQUE,
     name VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Таблица согласий
 CREATE TABLE IF NOT EXISTS consents (
@@ -28,7 +32,7 @@ CREATE TABLE IF NOT EXISTS consents (
     ip_address VARCHAR(45),
     user_agent TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Таблица логов событий
 CREATE TABLE IF NOT EXISTS event_logs (
@@ -39,7 +43,7 @@ CREATE TABLE IF NOT EXISTS event_logs (
     ip_address VARCHAR(45),
     user_agent TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Таблица пользовательских данных (для экспорта)
 CREATE TABLE IF NOT EXISTS user_data (
@@ -48,7 +52,7 @@ CREATE TABLE IF NOT EXISTS user_data (
     field_name VARCHAR(100),
     field_value TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Демо-пользователь (для тестирования)
 INSERT IGNORE INTO users (email, name) VALUES ('demo@example.com', 'Демо Пользователь');
