@@ -46,6 +46,19 @@ services:
       DB_PORT: 3306
     networks:
       - app_network
+  nginx:
+    image: nginx:alpine  # Легковесный образ Nginx
+    container_name: my_nginx
+    ports:
+      - "80:80"          # Слушает HTTP-порт
+      - "443:443"        # Слушает HTTPS-порт
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d  # Монтирует папку с конфигами
+    depends_on:
+      - node_app
+    networks:
+      - app_network
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: my_phpmyadmin
