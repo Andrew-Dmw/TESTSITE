@@ -334,15 +334,12 @@ app.use((req, res, next) => {
     res.status(404).render('404', { title: 'Страница не найдена' });
 });
 
+// const start = () => { ... } // старую функцию замените на эту:
+
 const start = () => {
     try {
-        const sslOptions = {
-            key: fs.readFileSync(path.join(__dirname, 'ssl', 'key.pem')),
-            cert: fs.readFileSync(path.join(__dirname, 'ssl', 'cert.pem'))
-        };
-        const server = https.createServer(sslOptions, app);
-        server.listen(PORT, HOSTNAME, () => {
-            console.log(`✅ HTTPS Server started on: https://localhost:${PORT}`);
+        const server = app.listen(PORT, '0.0.0.0', () => {
+            console.log(`✅ HTTP Server started on: http://0.0.0.0:${PORT}`);
             console.log(`Process PID: ${process.pid}`);
             logger.info('server start');
         });
