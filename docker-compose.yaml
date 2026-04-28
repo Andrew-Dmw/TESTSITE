@@ -31,9 +31,9 @@ services:
   node_app:
     build: .
     container_name: my_diploma_app
-    # Пробрасываем порт 3000 из контейнера на хост-машину
-    ports:
-      - "3000:3000"
+    # Пробрасывает порт 3000 из контейнера на хост-машину(для разработки)
+    #ports:
+    #  - "3000:3000"
     depends_on:
       mysql_db:
         condition: service_healthy
@@ -54,6 +54,7 @@ services:
       - "443:443"        # Слушает HTTPS-порт
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d  # Монтирует папку с конфигами
+      - ./nginx/ssl:/etc/nginx/ssl
     depends_on:
       - node_app
     networks:
