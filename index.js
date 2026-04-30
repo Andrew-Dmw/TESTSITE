@@ -339,7 +339,7 @@ app.use((req, res, next) => {
 const start = () => {
     try {
         const server = app.listen(PORT, '0.0.0.0', () => {
-            console.log(`✅ HTTP Server started on: http://0.0.0.0:${PORT}`);
+            console.log(`✅ HTTP Server started on: http://localhost:${PORT}`);
             console.log(`Process PID: ${process.pid}`);
             logger.info('server start');
         });
