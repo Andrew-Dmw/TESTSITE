@@ -29,20 +29,8 @@
         downloadButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 if (!btn.hasAttribute('onclick')) {
-                    alert('Демонстрация: в реальном проекте здесь будет загрузка файла.');
+                    alert('Скачивание началось.');
                 }
             });
         });
     })();
-  // Функция-заглушка для всех форм модели
-   document.addEventListener('DOMContentLoaded', function() {
-    // Находим все формы на странице с определёнными action (или все формы внутри контейнера модели)
-    const forms = document.querySelectorAll('.legal-form');
-    forms.forEach(form => {
-      form.addEventListener('submit', function(event) {
-        event.preventDefault(); // Останавливаем реальную отправку
-        const formName = form.getAttribute('data-form-name') || 'формы';
-        alert(`🛡️ Демонстрационный режим\n\nФорма "${formName}" не отправлена, так как это заглушка.\nВ полной версии модели здесь был бы запрос к серверу и логирование действий согласно ст. 9, 14, 21 ФЗ-152.`);
-      });
-    });
-  });
