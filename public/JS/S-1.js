@@ -1,14 +1,56 @@
 console.log("S-1 worked!");
 
 //опрос
-    setTimeout(() => {
-        const ds = confirm("Видимо вы заинтересовались данным сайтом. Не хотите пройти опрос?")
-        if (ds){
-          const dt = alert("Пока что он в разработке.");
-        }else{
-          const ds = alert("Хорошо, мы вас услышали.");
-        }
-  }, 2000000);
+setTimeout(() => {
+  const wantToSuggest = confirm("Видим, что вы заинтересовались сайтом. Не хотите ли добавить предложения по улучшению?");
+  if (wantToSuggest) {
+    let suggestion = "";
+    // Цикл запроса, пока не будет введён непустой текст (или пока пользователь не нажмёт "Отмена")
+    while (true) {
+      suggestion = prompt("Отлично! Напишите ваши предложения по улучшению сайта:");
+      if (suggestion === null) {
+        alert("Ввод отменён. Спасибо, что захотели помочь!");
+        break; // выходим из цикла, если нажали "Отмена"
+      }
+      if (suggestion.trim() === "") {
+        alert("Отзыв не может состоять из одних пробелов. Попробуйте ещё раз.");
+        continue; // повторяем запрос
+      }
+      break; // корректный ввод, выходим из цикла
+    }
+    // Если предложение было введено (не null и не пустое)
+    if (suggestion && suggestion.trim() !== "") {
+      // Подтверждаем введённый текст
+      const isCorrect = confirm(`Вы ввели:\n"${suggestion}"\n\nВсё верно?`);
+      if (isCorrect) {
+        // Отправляем данные на сервер
+        fetch("/submit-feedback", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ feedback: suggestion, timestamp: new Date().toISOString() })
+        })
+        .then(response => {
+          if (response.ok) {
+            alert("Ваши предложения отправлены. Благодарим за вклад в развитие сайта!");
+          } else {
+            alert("Произошла ошибка при отправке. Попробуйте позже.");
+          }
+        })
+        .catch(error => {
+          console.error("Ошибка отправки:", error);
+          alert("Не удалось отправить данные. Проверьте соединение.");
+        });
+      } else {
+        alert("Хорошо, можете отредактировать текст позже. Спасибо!");
+      }
+    }
+  } else {
+    alert("Хорошо, мы вас услышали. Если появятся идеи – всегда рады!");
+  }
+}, 200000);
+  
 
 //напоминание о перерыве
 setInterval(() => {

@@ -1,6 +1,6 @@
 {
     "watch": ["."],
-    "ext": "js,ejs,json",
+    "ext": "js,ejs,json,html",
     "ignore": ["node_modules/*", "my-logs", "process.env"],
     "exec": "node --inspect index.js"
 }
