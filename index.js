@@ -42,6 +42,22 @@ app.set('layout', 'layout');
 // Middleware for URL-encoded forms
 app.use(bodyParser.urlencoded({ extended: false }));
 
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://yastatic.net"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https://yastatic.net"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'self'"],
+      mediaSrc: ["'self'"],
+      objectSrc: ["'none'"],
+    },
+  })
+);
+
 // Database config
 const dbConfig = {
     host: config.db.host,
@@ -159,7 +175,7 @@ const getClientIp = (req) => {
     return req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 };
 
-app.post('/revoke-consent', csrfProtection, async (req, res) => {
+app.post('/revoke-consent', limiter, csrfProtection, async (req, res) => {
     try {
         const { email } = req.body;
         if (!email || !validator.isEmail(email)) {
@@ -200,12 +216,13 @@ app.post('/revoke-consent', csrfProtection, async (req, res) => {
             <a href="/ER">Вернуться к модели</a>
         `);
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Ошибка сервера');
+        console.error('Error saving to database:', error);
+        logger.error(`Database error: ${error.message}`);
+        res.status(500).redirect('/Server-error');
     }
 });
 
-app.post('/delete-data', csrfProtection, async (req, res) => {
+app.post('/delete-data', limiter, csrfProtection, async (req, res) => {
     try {
         const { email } = req.body;
         if (!email || !validator.isEmail(email)) {
@@ -239,12 +256,13 @@ app.post('/delete-data', csrfProtection, async (req, res) => {
             <a href="/ER">Вернуться к модели</a>
         `);
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Ошибка сервера');
+        console.error('Error saving to database:', error);
+        logger.error(`Database error: ${error.message}`);
+        res.status(500).redirect('/Server-error');
     }
 });
 
-app.get('/export-data', csrfProtection, async (req, res) => {
+app.get('/export-data', limiter, csrfProtection, async (req, res) => {
     try {
         const email = req.query.email;
         if (!email || !validator.isEmail(email)) {
@@ -294,9 +312,35 @@ app.get('/export-data', csrfProtection, async (req, res) => {
         res.setHeader('Content-type', 'application/json');
         res.send(JSON.stringify(exportData, null, 2));
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Ошибка сервера');
+        console.error('Error saving to database:', error);
+        logger.error(`Database error: ${error.message}`);
+        res.status(500).redirect('/Server-error');
     }
+});
+
+app.post('/submit-feedback', limiter, express.json(), async (req, res) => {
+  const { feedback, timestamp } = req.body;
+  if (!feedback) {
+    return res.status(400).json({ error: "No feedback provided" });
+  }
+
+  try {
+    // Подключаемся к базе данных
+    const connection = await mysql.createConnection(dbConfig);
+    // Выполняем вставку
+    const [result] = await connection.execute(
+      'INSERT INTO feedback (feedback, created_at) VALUES (?, ?)',
+      [feedback, timestamp || new Date()]
+    );
+    
+    await connection.end();
+    
+    console.log(`Фидбек сохранён, ID = ${result.insertId}`);
+    res.status(200).json({ message: "Feedback saved", id: result.insertId });
+  } catch (error) {
+    console.error("Ошибка при сохранении фидбека:", error);
+    res.status(500).json({ error: "Database error" });
+  }
 });
 
 // Thank you route

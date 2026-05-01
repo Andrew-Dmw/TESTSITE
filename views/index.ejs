@@ -55,7 +55,7 @@
       </p>
 
     <div id="status"></div></p>
-      <p><button id ="ClickMe"> Нажми на меня! </button> <button id = "backgroundCSS">Изменить фон</button></p>   
+      <p><button id ="ClickMe"> Нажми на меня! </button> <button id = "backgroundCSS">Изменить фон</button> <button id="Numer">Игра кто ты в цифровом мире</button></p>   
 
       <img src="/images/maxresdefault.jpg" alt="На данной фотографии изображён котёнок в траве." width="300" height="200">
       <p>Это котёнок, милый правда?</p>
@@ -138,31 +138,29 @@
     <article>
       <h3 id="warn">Правила работы с дарквебом(даркнетом) <a href="#nav">К навигационному меню</a></h3>
       <p> Здесь перечислены правила для работы с даркнетом, будьте предельно осторожны прежде чем использовать данную часть интернета.</p>
-      <iframe src="/docs/WARN.html" width="1000" height="1000" alt = "Здесь перечислены правила для работы с дарвебом."></iframe>
+      <iframe src="/docs/WAR.html" width="1000" height="1000" alt = "Здесь перечислены правила для работы с дарвебом."></iframe>
     </article>
     </section>
     <section>
     <article>
       <h3 id="DD"><em> Отзыв </em> <a href="#nav">К навигационному меню</a></h3>
       <p>Нам очень важно ваше мнение, поэтому, если вам не составит труда напишите отзыв о нашем сайте,<br>что вам нравиться и не нравиться. А также не забудьте отметить необходимую галочку.</p>
-    <form id="myForm" action="/save-data" method="post">
+<form id="myForm" action="/save-data" method="post">
   <fieldset>
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-    <p><label>Выберите дату и время написания</label></P>
-    <p><input type="datetime-local" name="dateTime" value="2025-07-30T14:47"></p>
+      <p><label>Выберите дату и время написания</label></P>
+      <p><input type="datetime-local" name="dateTime" value="2025-07-30T14:47"></p>
 
-    <p>Вам нравиться сайт?</p>
-    <input type="radio" id="YES" name="Z" value="v">
-    <label for="YES">Да</label>
+      <p>Вам нравиться сайт?</p>
+      <input type="radio" id="YES" name="Z" value="v">
+      <label for="YES">Да</label>
+      <input type="radio" id="NOT" name="Z" value="k">
+      <label for="NOT">Нет</label>
+      <input type="radio" id="IDK" name="Z" value="l">
+      <label for="IDK">Не знаю</label>
 
-    <input type="radio" id="NOT" name="Z" value="k">
-    <label for="NOT">Нет</label>
-
-    <input type="radio" id="IDK" name="Z" value="l">
-    <label for="IDK">Не знаю</label>
-
-    <p><label for="Like">Какой раздел вам больше понравился?</label></p>
-    <select id="Like" name="Like">
+      <p><label for="Like">Какой раздел вам больше понравился?</label></p>
+      <select id="Like" name="Like">
       <optgroup label="Шапка">
         <option selected value="Welcome"> Добро пожаловать!</option>
       </optgroup>

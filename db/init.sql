@@ -54,6 +54,13 @@ CREATE TABLE IF NOT EXISTS user_data (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Таблица фидбека
+CREATE TABLE IF NOT EXISTS feedback (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  feedback TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Демо-пользователь (для тестирования)
 INSERT IGNORE INTO users (email, name) VALUES ('demo@example.com', 'Демо Пользователь');
 INSERT IGNORE INTO user_data (user_id, field_name, field_value)
