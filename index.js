@@ -99,6 +99,27 @@ const limiter = rateLimit({
   max: 100, // Increased max for development
   message: "Слишком много запросов с этого IP, пожалуйста, попробуйте позже через 15 минут."
 });
+app.post('/submit-feedback', limiter, express.json(), async (req, res) => {
+  const { feedback } = req.body;
+  if (!feedback || typeof feedback !== 'string' || feedback.trim() === '') {
+    return res.status(400).json({ error: "No feedback provided" });
+  }
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    // Вставляем только feedback, created_at автоматически станет NOW()
+    const [result] = await connection.execute(
+      'INSERT INTO feedback (feedback) VALUES (?)',
+      [feedback.trim()]
+    );
+    await connection.end();
+    console.log(`Фидбек сохранён, ID = ${result.insertId}`);
+    res.status(200).json({ message: "Feedback saved", id: result.insertId });
+  } catch (error) {
+    console.error("Ошибка БД при сохранении фидбека:", error);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
 
 const csrfProtection = csurf({ cookie: false }); // Использует сессию
 
@@ -318,31 +339,6 @@ app.get('/export-data', limiter, csrfProtection, async (req, res) => {
         logger.error(`Database error: ${error.message}`);
         res.status(500).redirect('/Server-error');
     }
-});
-
-app.post('/submit-feedback', limiter, express.json(), async (req, res) => {
-  const { feedback, timestamp } = req.body;
-  if (!feedback) {
-    return res.status(400).json({ error: "No feedback provided" });
-  }
-
-  try {
-    // Подключаемся к базе данных
-    const connection = await mysql.createConnection(dbConfig);
-    // Выполняем вставку
-    const [result] = await connection.execute(
-      'INSERT INTO feedback (feedback, created_at) VALUES (?, ?)',
-      [feedback, timestamp || new Date()]
-    );
-    
-    await connection.end();
-    
-    console.log(`Фидбек сохранён, ID = ${result.insertId}`);
-    res.status(200).json({ message: "Feedback saved", id: result.insertId });
-  } catch (error) {
-    console.error("Ошибка при сохранении фидбека:", error);
-    res.status(500).json({ error: "Database error" });
-  }
 });
 
 // Thank you route

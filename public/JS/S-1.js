@@ -5,29 +5,28 @@ setTimeout(() => {
   const wantToSuggest = confirm("Видим, что вы заинтересовались сайтом. Не хотите ли добавить предложения по улучшению?");
   if (wantToSuggest) {
     let suggestion = "";
-    // Цикл запроса, пока не будет введён непустой текст (или пока пользователь не нажмёт "Отмена")
     while (true) {
       suggestion = prompt("Отлично! Напишите ваши предложения по улучшению сайта:");
       if (suggestion === null) {
         alert("Ввод отменён. Спасибо, что захотели помочь!");
-        break; // выходим из цикла, если нажали "Отмена"
+        break;
       }
       if (suggestion.trim() === "") {
         alert("Отзыв не может состоять из одних пробелов. Попробуйте ещё раз.");
-        continue; // повторяем запрос
+        continue;
       }
-      break; // корректный ввод, выходим из цикла
+      break;
     }
-    // Если предложение было введено (не null и не пустое)
     if (suggestion && suggestion.trim() !== "") {
-      // Подтверждаем введённый текст
       const isCorrect = confirm(`Вы ввели:\n"${suggestion}"\n\nВсё верно?`);
       if (isCorrect) {
-        // Отправляем данные на сервер
+        // Получаем CSRF-токен из мета-тега
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content");
         fetch("/submit-feedback", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            ...(csrfToken && { "CSRF-Token": csrfToken })
           },
           body: JSON.stringify({ feedback: suggestion, timestamp: new Date().toISOString() })
         })
