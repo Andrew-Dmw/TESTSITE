@@ -1,4 +1,35 @@
 console.log("S-2 worked!");
+// Генерация и вывод ASCII-сердечка с именем X10
+(function drawHeart() {
+    const heart = [];
+    const name = " X10 ";
+    const size = 6; // размер сердца
+    for (let y = size; y >= -size; y--) {
+        let line = "";
+        for (let x = -size; x <= size; x++) {
+            // формула сердца: (x^2 + y^2 - 1)^3 - x^2 * y^3 <= 0
+            const x2 = x * 0.8;
+            const y2 = y;
+            const formula = Math.pow((x2 * x2 + y2 * y2 - 1), 3) - (x2 * x2 * Math.pow(y2, 3));
+            if (formula <= 0) {
+                line += "* "; // красное сердечко или можно использовать '*'
+            } else {
+                line += "  ";
+            }
+        }
+        heart.push(line);
+    }
+    
+    // Находим середину сердца и вставляем имя
+    const middleIndex = Math.floor(heart.length / 2);
+    const originalLine = heart[middleIndex];
+    const trimmedLine = originalLine.substring(0, originalLine.length / 2 - name.length / 2) + name + 
+                        originalLine.substring(originalLine.length / 2 + name.length / 2);
+    heart[middleIndex] = trimmedLine;
+    
+    // Выводим сердце в консоль
+    console.log("%c" + heart.join("\n"), "color: #ff3366; font-size: 14px; font-family: monospace;");
+})();
 
 //Игра "кто ты в цифровом мире?"
 const button2 = document.getElementById("Numer");
@@ -109,41 +140,45 @@ butto.addEventListener ("click", D);
 
 //подтверждение имени
 document.addEventListener('DOMContentLoaded', () => {
+    const greetingElement = document.getElementById("grt");
+    if (!greetingElement) return;
+
+    let storedName = localStorage.getItem("userName");
+    if (storedName && storedName !== "Гость" && storedName !== "null") {
+        greetingElement.textContent = storedName + ", добро пожаловать на сайт!";
+        return;
+    }
+
     let nameZ = "";
-    while (!nameZ || nameZ.trim() === ""){
+    while (!nameZ || nameZ.trim() === "") {
         nameZ = prompt("Как тебя зовут?");
-        const adminName = "AdminX10";
-        if (nameZ === null){
-            alert("Ввод имени отменён.");
+        if (nameZ === null) {
             nameZ = "Гость";
             break;
-        }else if (nameZ === adminName) {
-            alert("Welcome to the club body");
-            console.log("Welcome");
-            break;
-        }else if (nameZ.trim() === ""){
-            alert("Имя - это не пробел. Пожалуйста введите имя.");
-            console.error("errName: Invalid_name");
-            continue
-        }else{
-            alert("Привет, " + nameZ + "!");
-            const greeting = document.getElementById("grt");
-            greeting.textContent = nameZ + ", добро "
-            break;
-        };
+        } else if (nameZ.trim() === "") {
+            alert("Имя не может состоять из пробелов. Попробуйте ещё раз.");
+            continue;
+        } else {
+            const trimmedName = nameZ.trim();
+            localStorage.setItem("userName", trimmedName);
+            greetingElement.textContent = trimmedName + ", добро пожаловать на сайт!";
+            alert("Привет, " + trimmedName + "!");
+            return;
+        }
     }
-    const greeting = document.getElementById("grt");
-    if (greeting) greeting.textContent = nameZ + ", добро ";
+    if (nameZ === "Гость") {
+        greetingElement.textContent = "Добро пожаловать, Гость!";
+    }
 });
 
-    //защита от повторного использования
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('myForm');
-            const submitBtn = document.getElementById('submitButton');
-            if (form && submitBtn) {
-                form.addEventListener('submit', function() {
-                    submitBtn.disabled = true;
-                    submitBtn.value = 'Отправка...';
-                });
-            }
+//защита от повторного использования
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('myForm');
+    const submitBtn = document.getElementById('submitButton');
+    if (form && submitBtn) {
+        form.addEventListener('submit', function() {
+            submitBtn.disabled = true;
+            submitBtn.value = 'Отправка...';
         });
+    }
+});

@@ -24,14 +24,16 @@ app.use('/.well-known', express.static(path.join(__dirname, '.well-known')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, 'public'),
-{setHeaders: (res, path, stat) => {
-      if (path.endsWith('.css')) {
-            res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 день для CSS
-        } else if (path.endsWith('.js')) {
-            res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 час для JS
+app.use(express.static(path.join(__dirname, 'public'), {
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.css')) {
+            res.setHeader('Cache-Control', 'no-cahe, must-revalidate');
+        } else if (filePath.endsWith('.js')) {
+            res.setHeader('Cache-Control', 'no-cahe, must-revalidate');
+        } else if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache, must-revalidate');
         } else {
-            res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 год для остального
+            res.setHeader('Cache-Control', 'public, max-age=31536000');
         }
     }
 }));
