@@ -141,44 +141,46 @@
     </article>
     </section>
     <section>
-    <article>
-      <h3 id="DD"><em> Отзыв </em> <a href="#nav">К навигационному меню</a></h3>
-      <p>Нам очень важно ваше мнение, поэтому, если вам не составит труда напишите отзыв о нашем сайте,<br>что вам нравиться и не нравиться. А также не забудьте отметить необходимую галочку.</p>
-<form id="myForm" action="/save-data" method="post" autocomplete="off">
-  <fieldset autocomplete="off">
-    <input type="hidden" name="_csrf" value="<%= csrfToken %>" autocomplete="off">
-      <p><label>Выберите дату и время написания</label></P>
-      <p><input type="datetime-local" name="dateTime" value="2025-07-30T14:47" autocomplete="off"></p>
+      <article>
+        <h3 id="DD"><em> Отзыв </em> <a href="#nav">К навигационному меню</a></h3>
+        <p>Нам очень важно ваше мнение, поэтому, если вам не составит труда напишите отзыв о нашем сайте,<br>что вам нравиться и не нравиться. А также не забудьте отметить необходимую галочку.</p>
+        <form id="myForm" action="/save-data" method="post" autocomplete="off">
+          <fieldset autocomplete="off">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" autocomplete="off">
+            <p><label for="dateTimeInput">Выберите дату и время написания</label></p>
+            <p><input type="datetime-local" id="dateTimeInput" name="dateTime" value="2025-07-30T14:47" autocomplete="off"></p>
 
-      <p>Вам нравиться сайт?</p>
-      <input type="radio" id="YES" name="Z" value="v" autocomplete="off">
-      <label for="YES">Да</label>
-      <input type="radio" id="NOT" name="Z" value="k" autocomplete="off">
-      <label for="NOT">Нет</label>
-      <input type="radio" id="IDK" name="Z" value="l" autocomplete="off">
-      <label for="IDK">Не знаю</label>
+            <p>Вам нравится сайт?</p>
+            <input type="radio" id="YES" name="Z" value="v" autocomplete="off">
+            <label for="YES">Да</label>
+            <input type="radio" id="NOT" name="Z" value="k" autocomplete="off">
+            <label for="NOT">Нет</label>
+            <input type="radio" id="IDK" name="Z" value="l" autocomplete="off">
+            <label for="IDK">Не знаю</label>
 
-      <p><label for="Like">Какой раздел вам больше понравился?</label></p>
-      <select id="Like" name="Like">
-      <optgroup label="Шапка">
-        <option selected value="Welcome"> Добро пожаловать!</option>
-      </optgroup>
-      <optgroup label="Основная часть">
-        <option value="tests"> Небольшие тесты</option>
-        <option value="spisok"> Список того, что в будущем будет добавлено на сайт</option>
-        <option value="cats"> КОТЯТА</option>
-        <option value="red"> Особая часть</option>
-      </optgroup>
-      <optgroup label="Подвал">
-        <option value="footer"> Контактная  информация</option>
-      </optgroup>
-    </select>
+            <p><label for="LikeSelect">Какой раздел вам больше понравился?</label></p>
+            <select id="LikeSelect" name="Like">
+              <optgroup label="Шапка">
+                <option selected value="Welcome"> Добро пожаловать!</option>
+              </optgroup>
+              <optgroup label="Основная часть">
+                <option value="tests"> Небольшие тесты</option>
+                <option value="spisok"> Список того, что в будущем будет добавлено на сайт</option>
+                <option value="cats"> КОТЯТА</option>
+                <option value="red"> Особая часть</option>
+              </optgroup>
+              <optgroup label="Подвал">
+                <option value="footer"> Контактная  информация</option>
+              </optgroup>
+            </select>
 
-    <p><textarea name="COMMENT" id="COMMENT" rows="5" cols="30" maxlength="1000" placeholder="Напишите ваш отзыв о сайте." autocomplete="off"></textarea></p>
-    <p><button type="submit" id="submitButton">Отправить</button> <button type="reset">Сбросить</button></p>
-  </fieldset>
-</form>
-    </article>
+            <p><label for="COMMENT">Напишите ваш отзыв о сайте.</label></p>
+            <p><textarea id="COMMENT" name="COMMENT" rows="5" cols="30" maxlength="1000" placeholder="Напишите ваш отзыв о сайте." autocomplete="off"></textarea></p>
+
+            <p><button type="submit" id="submitButton">Отправить</button> <button type="reset">Сбросить</button></p>
+          </fieldset>
+        </form>
+      </article>
     </section>
     <aside>
       <h4><b>Прочие источники</b></h4>
