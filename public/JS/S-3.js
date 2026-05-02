@@ -1,3 +1,4 @@
+console.log('S-3 worked!');
     (function() {
         // Переключение вкладок
         const tabBtns = document.querySelectorAll('.tab-btn');
