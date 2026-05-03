@@ -162,3 +162,128 @@ npm start
 - Для корректного отображения кириллицы в базе данных используется кодировка utf8mb4.
 
 - Образцы юридических документов находятся в папке public/samples/ и имеют формат .docx
+
+## Схемы архитектуры
+
+### 1. Компонентная архитектура
+
+```mermaid
+graph TB
+    subgraph DockerHost [Docker Host]
+        subgraph Network [app_network]
+            Nginx[Nginx<br>ports: 80, 443]
+            Node[Node.js<br>port: 3000 internal]
+            MySQL[MySQL<br>port: 3306 internal]
+            phpMyAdmin[phpMyAdmin<br>port: 8080 internal]
+        end
+    end
+    Client[Клиент (браузер)] -->|HTTPS| Nginx
+    Nginx -->|HTTP proxy| Node
+    Node -->|SQL| MySQL
+    phpMyAdmin -->|SQL| MySQL
+    Admin[Администратор локально] -->|HTTP localhost:8080| phpMyAdmin
+    style Nginx fill:#f9f,stroke:#333
+    style Node fill:#bbf,stroke:#333
+    style MySQL fill:#bfb,stroke:#333
+    style phpMyAdmin fill:#ffb,stroke:#333
+```
+
+```mermaid
+erDiagram
+    users {
+        int id PK
+        string email UK
+        string name
+        timestamp created_at
+    }
+    consents {
+        int id PK
+        int user_id FK
+        string purpose
+        string version
+        boolean is_active
+        timestamp given_at
+        timestamp revoked_at
+        string ip_address
+        text user_agent
+    }
+    event_logs {
+        int id PK
+        string user_email
+        string action
+        text details
+        string ip_address
+        text user_agent
+        timestamp created_at
+    }
+    user_data {
+        int id PK
+        int user_id FK
+        string field_name
+        text field_value
+    }
+    feedback {
+        int id PK
+        text feedback
+        timestamp created_at
+    }
+    users ||--o{ consents : has
+    users ||--o{ user_data : has
+    event_logs }o--|| users : "references by email (not FK)"
+```
+
+```mermaid
+graph TD
+   A[Пользователь] -->|POST /revoke-consent| B(Nginx)
+   B -->|прокси| C(Node.js)
+   C -->|валидация| D{Email корректен?}
+   D -->|Нет| E[400 error]
+   D -->|Да| F[Поиск в users]
+   F -->|Найден| G[UPDATE consents is_active=0]
+   G --> H[INSERT event_logs]
+   H --> I[200 OK с подтверждением]
+```
+```mermaid
+flowchart TB
+    Public((Публичный интернет))
+    Local((Локальный доступ))
+    Internal((Внутренняя Docker-сеть))
+    
+    subgraph " "
+        direction TB
+        Public --> Nginx
+    end
+    subgraph " "
+        direction TB
+        Local --> phpMyAdmin_Local[phpMyAdmin :8080]
+    end
+    subgraph " "
+        direction TB
+        Internal --> Node[Node.js :3000]
+        Internal --> MySQL[MySQL :3306]
+        Nginx --> Node
+        phpMyAdmin_Local --> MySQL
+    end
+```
+
+```mermaid
+graph LR
+    subgraph Host [Хостовая ОС]
+        Docker[Docker Engine]
+        subgraph Compose [docker-compose.yml]
+            Nginx[Nginx<br>volumes: ./nginx/conf.d, ./nginx/ssl]
+            Node[Node.js<br>build: .]
+            MySQL[MySQL<br>volumes: mysql_data, ./db/init.sql]
+            phpMyAdmin[phpMyAdmin]
+        end
+    end
+    Internet((Интернет)) --> Nginx
+    Nginx --> Node
+    Node --> MySQL
+    phpMyAdmin --> MySQL
+    Admin[Администратор] -->|localhost:8080| phpMyAdmin
+    style Nginx fill:#ee8
+    style Node fill:#e8e
+    style MySQL fill:#8e8
+    style phpMyAdmin fill:#8ee
+```

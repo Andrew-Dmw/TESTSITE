@@ -1,21 +1,15 @@
-version: '3.8'
-
 services:
-  # 1. Сервис с базой данных MySQL
   mysql_db:
     image: mysql:8.0
     container_name: my_diploma_db
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    # Переменные для инициализации БД
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: my_diploma_db
-      MYSQL_USER: my_user
-      MYSQL_PASSWORD: my_password
-    # Проброс порта: внешний_порт:внутренний_порт
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3307:3306"     # Внешний порт 3307, чтобы не конфликтовать с локальной MySQL[reference:2]
-    # Сохраняем данные БД на диске (чтобы они не пропадали при перезапуске)
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -27,33 +21,34 @@ services:
     networks:
       - app_network
 
-  # 2. Сервис с Node.js приложением
   node_app:
     build: .
     container_name: my_diploma_app
-    # Пробрасывает порт 3000 из контейнера на хост-машину(для разработки)
-    #ports:
-    #  - "3000:3000"
+    # ports:   # закомментировано, так как порт пробрасывает Nginx
+    #   - "3000:3000"
     depends_on:
       mysql_db:
         condition: service_healthy
-    # Переменные окружения для подключения к БД из приложения
     environment:
-      DB_HOST: mysql_db
-      DB_USER: root
-      DB_PASSWORD: root_password
-      DB_DATABASE: my_diploma_db
-      DB_PORT: 3306
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_PORT: ${DB_PORT}
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${PORT}
+      SESSION_SECRET: ${SESSION_SECRET}
     networks:
       - app_network
+
   nginx:
-    image: nginx:alpine  # Легковесный образ Nginx
+    image: nginx:alpine
     container_name: my_nginx
     ports:
-      - "80:80"          # Слушает HTTP-порт
-      - "443:443"        # Слушает HTTPS-порт
+      - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d  # Монтирует папку с конфигами
+      - ./nginx/conf.d:/etc/nginx/conf.d
       - ./nginx/ssl:/etc/nginx/ssl
     depends_on:
       - node_app
@@ -64,22 +59,20 @@ services:
     image: phpmyadmin/phpmyadmin
     container_name: my_phpmyadmin
     ports:
-      - "8080:80"                     # на хосте будет доступен на порту 8080
+      - "8080:80"
     environment:
-      PMA_HOST: mysql_db              # имя сервиса MySQL
-      PMA_PORT: 3306                  # внутренний порт MySQL
-      PMA_ARBITRARY: 1                # разрешить подключение к любому хосту (опционально)
-      UPLOAD_LIMIT: 300M              # лимит загружаемых файлов
+      PMA_HOST: ${PMA_HOST:-mysql_db}
+      PMA_PORT: ${PMA_PORT:-3306}
+      PMA_ARBITRARY: 1
+      UPLOAD_LIMIT: 300M
     depends_on:
-      - mysql_db                      # ждём запуска MySQL
+      - mysql_db
     networks:
-      - app_network                   # та же сеть, что и у MySQL
+      - app_network
 
-# Определяем сеть для связи контейнеров
 networks:
   app_network:
     driver: bridge
 
-# Определяем том для долговременного хранения данных MySQL
 volumes:
   mysql_data:
