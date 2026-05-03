@@ -11,20 +11,23 @@ describe('Защита и безопасность', () => {
     });
 
     it('Honeypot должен блокировать ботов', async () => {
-        const res = await request(app)
-            .post('/save-data')
-            .field('Z', 'v')
-            .field('Like', 'cats')
-            .field('COMMENT', 'test')
-            .field('dateTime', '2025-07-30T14:47')
-            .field('honeypot', 'anything') // заполненное поле-ловушка
-            .expect(400);
-        expect(res.text).toContain('Бот обнаружен');
+    const res = await request(app)
+    .post('/save-data')
+    .type('form')
+    .send({
+        Z: 'v',
+        Like: 'cats',
+        COMMENT: 'test',
+        dateTime: '2025-07-30T14:47',
+        honeypot: 'anything'
+    })
+    .expect(400);
+    expect(res.text).toContain('Бот обнаружен');
     });
 
     it('Rate limiting должен блокировать частые запросы', async () => {
-  let blocked = false;
-  for (let i = 0; i < 6; i++) {
+    let blocked = false;
+    for (let i = 0; i < 6; i++) {
     const res = await request(app).get('/');
     if (res.status === 429) {
       blocked = true;
