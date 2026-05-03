@@ -163,19 +163,16 @@ npm start
 
 - Образцы юридических документов находятся в папке public/samples/ и имеют формат .docx
 
-## Схемы архитектуры
+## Схемы архитектуры веб-приложения
 
-### 1. Компонентная архитектура
-
-```mermaid
+### 1. Архитектура компонентов(контейнеры и связи)
+```
 graph TB
     subgraph DockerHost [Docker Host]
-        subgraph Network [app_network]
-            Nginx[Nginx<br>ports: 80, 443]
-            Node[Node.js<br>port: 3000 internal]
-            MySQL[MySQL<br>port: 3306 internal]
-            phpMyAdmin[phpMyAdmin<br>port: 8080 internal]
-        end
+        Nginx[Nginx<br>ports: 80, 443]
+        Node[Node.js<br>port: 3000 internal]
+        MySQL[MySQL<br>port: 3306 internal]
+        phpMyAdmin[phpMyAdmin<br>port: 8080 internal]
     end
     Client[Клиент (браузер)] -->|HTTPS| Nginx
     Nginx -->|HTTP proxy| Node
@@ -187,7 +184,7 @@ graph TB
     style MySQL fill:#bfb,stroke:#333
     style phpMyAdmin fill:#ffb,stroke:#333
 ```
-
+### 2. ER-диаграмма базы данных
 ```mermaid
 erDiagram
     users {
@@ -231,7 +228,7 @@ erDiagram
     users ||--o{ user_data : has
     event_logs }o--|| users : "references by email (not FK)"
 ```
-
+### 3. Блок-схема отзыва согласия (POST /revoke-consent)
 ```mermaid
 graph TD
    A[Пользователь] -->|POST /revoke-consent| B(Nginx)
@@ -243,6 +240,7 @@ graph TD
    G --> H[INSERT event_logs]
    H --> I[200 OK с подтверждением]
 ```
+### 4. Многоуровневая модель разграничения доступа
 ```mermaid
 flowchart TB
     Public((Публичный интернет))
@@ -265,7 +263,7 @@ flowchart TB
         phpMyAdmin_Local --> MySQL
     end
 ```
-
+### 5. Docker-контейнеризация и сетевые связи
 ```mermaid
 graph LR
     subgraph Host [Хостовая ОС]
