@@ -15,6 +15,7 @@ const cors = require('cors');
 const app = express();
 
 // EJS setup
+app.use(express.json());
 app.use(cors());
 app.use('/.well-known', express.static(path.join(__dirname, '.well-known')));
 app.set('view engine', 'ejs');
@@ -92,11 +93,11 @@ app.use(session({
 app.use(helmet());
 
 // Rate limiting
-const maxRequests = process.env.RATE_LIMIT_MAX ? parseInt(process.env.RATE_LIMIT_MAX) : 100;
+const maxRequests = (process.env.NODE_ENV === 'test') ? 10000 : (process.env.RATE_LIMIT_MAX ? parseInt(process.env.RATE_LIMIT_MAX) : 100);
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: maxRequests,
-    message: "Слишком много запросов с этого IP, пожалуйста, попробуйте позже через 15 минут."
+    message: "Слишком много запросов..."
 });
 
 // CSRF: отключаем для тестов
