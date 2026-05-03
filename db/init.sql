@@ -1,6 +1,7 @@
 -- Определение кодировки
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
+USE my_diploma_test_db;
 
 -- Таблица отзывов
 CREATE TABLE IF NOT EXISTS reviews (
