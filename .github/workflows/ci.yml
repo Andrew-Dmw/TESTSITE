@@ -20,8 +20,15 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
+      # Создаём таблицы в тестовой БД
+      - name: Initialize database schema
+        run: |
+          mysql -h 127.0.0.1 -u root -proot my_diploma_test_db < db/init.sql
       - run: npm test
         env:
           DB_USER: root
           DB_PASSWORD: root
           DB_HOST: 127.0.0.1
+          DB_DATABASE: my_diploma_test_db
+          NODE_ENV: test
+          RATE_LIMIT_MAX: 5   # передаём в приложение для понижения лимита

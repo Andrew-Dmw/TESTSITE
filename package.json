@@ -6,6 +6,7 @@
   "scripts": {
     "S": "node index.js",
     "dev": "nodemon index.js",
+    "pretest": "node scripts/init-test-db.js",
     "test": "jest"
   },
   "author": "annabankova950@gmail.com",
