@@ -166,23 +166,19 @@ npm start
 ## Схемы архитектуры веб-приложения
 
 ### 1. Архитектура компонентов(контейнеры и связи)
-```
-graph TB
+```mermaid
+flowchart TB
     subgraph DockerHost [Docker Host]
-        Nginx[Nginx<br>ports: 80, 443]
-        Node[Node.js<br>port: 3000 internal]
-        MySQL[MySQL<br>port: 3306 internal]
-        phpMyAdmin[phpMyAdmin<br>port: 8080 internal]
+        Nginx["Nginx (ports:80,443)"]
+        Node["Node.js (port:3000 internal)"]
+        MySQL["MySQL (port:3306 internal)"]
+        phpMyAdmin["phpMyAdmin (port:8080 internal)"]
     end
-    Client[Клиент (браузер)] -->|HTTPS| Nginx
+    Client["Client (browser)"] -->|HTTPS| Nginx
     Nginx -->|HTTP proxy| Node
     Node -->|SQL| MySQL
     phpMyAdmin -->|SQL| MySQL
-    Admin[Администратор локально] -->|HTTP localhost:8080| phpMyAdmin
-    style Nginx fill:#f9f,stroke:#333
-    style Node fill:#bbf,stroke:#333
-    style MySQL fill:#bfb,stroke:#333
-    style phpMyAdmin fill:#ffb,stroke:#333
+    Admin["Admin (local)"] -->|HTTP localhost:8080| phpMyAdmin
 ```
 ### 2. ER-диаграмма базы данных
 ```mermaid
