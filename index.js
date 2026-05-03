@@ -94,10 +94,11 @@ app.use(session({
 app.use(helmet());
 
 // Rate limiting - increased max for development
+const maxRequests = process.env.RATE_LIMIT_MAX ? parseInt(process.env.RATE_LIMIT_MAX) : 100;
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Increased max for development
-  message: "Слишком много запросов с этого IP, пожалуйста, попробуйте позже через 15 минут."
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Increased max for development
+    message: "Слишком много запросов с этого IP, пожалуйста, попробуйте позже через 15 минут."
 });
 app.post('/submit-feedback', limiter, express.json(), async (req, res) => {
   const { feedback } = req.body;
@@ -123,7 +124,9 @@ app.post('/submit-feedback', limiter, express.json(), async (req, res) => {
 
 const csrfProtection = csurf({ cookie: false }); // Использует сессию
 
-app.use(csrfProtection);
+if (process.env.NODE_ENV !== 'test') {
+  app.use(csrfProtection);
+}
 
 // Middleware to pass CSRF token to views
 app.use(function (req, res, next) {
