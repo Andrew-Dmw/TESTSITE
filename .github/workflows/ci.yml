@@ -5,6 +5,7 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+
     services:
       mysql:
         image: mysql:8.0
@@ -13,22 +14,34 @@ jobs:
           MYSQL_DATABASE: my_diploma_test_db
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v6
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v6
         with:
           node-version: 20
-      - run: npm ci
-      # Создаём таблицы в тестовой БД
-      - name: Initialize database schema
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Initialize test database
         run: |
           mysql -h 127.0.0.1 -u root -proot my_diploma_test_db < db/init.sql
-      - run: npm test
+
+      - name: Run tests
+        run: npm test
         env:
+          DB_HOST: 127.0.0.1
           DB_USER: root
           DB_PASSWORD: root
-          DB_HOST: 127.0.0.1
           DB_DATABASE: my_diploma_test_db
           NODE_ENV: test
-          RATE_LIMIT_MAX: 5   # передаём в приложение для понижения лимита
+          RATE_LIMIT_MAX: 5
