@@ -15,12 +15,12 @@ const cors = require('cors');
 const app = express();
 
 // EJS setup
-app.use(express.json());
 app.use(cors());
 app.use('/.well-known', express.static(path.join(__dirname, '.well-known')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: false }));
+app.use(express.json()); // <= Добавлен глобальный парсер JSON
 app.use(express.static(path.join(__dirname, 'public'), {
     setHeaders: (res, filePath) => {
         if (filePath.endsWith('.css')) {
@@ -37,10 +37,6 @@ app.use(express.static(path.join(__dirname, 'public'), {
 
 app.use(expressLayouts);
 app.set('layout', 'layout');
-
-// Body parser
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(express.json()); // для работы с JSON
 
 // Helmet CSP
 app.use(
@@ -89,11 +85,10 @@ app.use(session({
   }
 }));
 
-// Helmet для общих заголовков
 app.use(helmet());
 
-// Rate limiting
-const maxRequests = (process.env.NODE_ENV === 'test') ? 10000 : (process.env.RATE_LIMIT_MAX ? parseInt(process.env.RATE_LIMIT_MAX) : 100);
+// Rate limiting: в тестовой среде лимит очень большой
+const maxRequests = process.env.NODE_ENV === 'test' ? 10000 : (process.env.RATE_LIMIT_MAX ? parseInt(process.env.RATE_LIMIT_MAX) : 100);
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: maxRequests,
@@ -109,7 +104,6 @@ if (process.env.NODE_ENV !== 'test') {
     next();
   });
 } else {
-  // В тестовой среде – заглушка, чтобы не было ошибок
   app.use((req, res, next) => {
     res.locals.csrfToken = 'test-token';
     next();
@@ -132,7 +126,6 @@ app.get('/ER', (req, res) => {
     res.render('ER', { title: "Формально-юридическая модель", layout: false });
 });
 
-// Обработка отзыва
 app.post('/save-data', limiter, async (req, res) => {
     try {
         console.log("req.body:", req.body);
@@ -145,10 +138,11 @@ app.post('/save-data', limiter, async (req, res) => {
         const validatedLike = Like ? validator.escape(Like) : null;
         const validatedCOMMENT = COMMENT ? validator.escape(COMMENT) : null;
         const validatedDateTime = dateTime ? validator.escape(dateTime) : null;
-
         const connection = await mysql.createConnection(dbConfig);
-        const query = `INSERT INTO reviews (date_time, liked_website, favorite_section, comment) VALUES (?, ?, ?, ?)`;
-        await connection.execute(query, [validatedDateTime, validatedZ, validatedLike, validatedCOMMENT]);
+        await connection.execute(
+            'INSERT INTO reviews (date_time, liked_website, favorite_section, comment) VALUES (?, ?, ?, ?)',
+            [validatedDateTime, validatedZ, validatedLike, validatedCOMMENT]
+        );
         await connection.end();
         res.redirect('/thank-you');
     } catch (error) {
@@ -158,12 +152,10 @@ app.post('/save-data', limiter, async (req, res) => {
     }
 });
 
-// Вспомогательная функция IP
 const getClientIp = (req) => {
     return req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 };
 
-// Отзыв согласия
 app.post('/revoke-consent', limiter, async (req, res) => {
     try {
         const { email } = req.body;
@@ -177,9 +169,16 @@ app.post('/revoke-consent', limiter, async (req, res) => {
             return res.status(404).send('Пользователь с таким email не найден.');
         }
         const userId = users[0].id;
-        await connection.execute(`UPDATE consents SET is_active = FALSE, revoked_at = NOW() WHERE user_id = ? AND is_active = TRUE`, [userId]);
-        await connection.execute(`INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`,
-            [email, 'consent_revoked', 'Отзыв всех согласий', getClientIp(req), req.headers['user-agent']]);
+        await connection.execute(
+            `UPDATE consents SET is_active = FALSE, revoked_at = NOW() WHERE user_id = ? AND is_active = TRUE`,
+            [userId]
+        );
+        const ip = getClientIp(req) || '';
+        const ua = req.headers['user-agent'] || '';
+        await connection.execute(
+            `INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`,
+            [email, 'consent_revoked', 'Отзыв всех согласий', ip, ua]
+        );
         await connection.end();
         res.send(`<h3>Согласие отозвано</h3><p>Ваши персональные данные будут удалены в течение 30 дней в соответствии со ст. 9 и 21 ФЗ-152.</p><a href="/ER">Вернуться к модели</a>`);
     } catch (error) {
@@ -188,7 +187,6 @@ app.post('/revoke-consent', limiter, async (req, res) => {
     }
 });
 
-// Удаление данных
 app.post('/delete-data', limiter, async (req, res) => {
     try {
         const { email } = req.body;
@@ -203,8 +201,12 @@ app.post('/delete-data', limiter, async (req, res) => {
         }
         const userId = users[0].id;
         await connection.execute('DELETE FROM user_data WHERE user_id = ?', [userId]);
-        await connection.execute(`INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, 'data_deleted', 'Персональные данные удалены', ?, ?)`,
-            [email, getClientIp(req), req.headers['user-agent']]);
+        const ip = getClientIp(req) || '';
+        const ua = req.headers['user-agent'] || '';
+        await connection.execute(
+            `INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`,
+            [email, 'data_deleted', 'Персональные данные удалены', ip, ua]
+        );
         await connection.end();
         res.send(`<h3>Данные удалены</h3><p>Ваши персональные данные удалены из системы. Ваши права на забвение реализованы (ст. 21 ФЗ-152).</p><a href="/ER">Вернуться к модели</a>`);
     } catch (error) {
@@ -213,7 +215,6 @@ app.post('/delete-data', limiter, async (req, res) => {
     }
 });
 
-// Экспорт данных
 app.get('/export-data', limiter, async (req, res) => {
     try {
         const email = req.query.email;
@@ -228,7 +229,10 @@ app.get('/export-data', limiter, async (req, res) => {
         }
         const user = users[0];
         const [dataRows] = await connection.execute('SELECT field_name, field_value FROM user_data WHERE user_id = ?', [user.id]);
-        const [consents] = await connection.execute('SELECT purpose, is_active, given_at, revoked_at FROM consents WHERE user_id = ?', [user.id]);
+        const [consents] = await connection.execute(
+            'SELECT purpose, is_active, given_at, revoked_at FROM consents WHERE user_id = ?',
+            [user.id]
+        );
         const exportData = {
             user: { id: user.id, name: user.name, email: user.email, registered_at: user.created_at },
             custom_fields: dataRows,
@@ -236,10 +240,13 @@ app.get('/export-data', limiter, async (req, res) => {
             export_date: new Date().toISOString(),
             legal_notice: 'Данные предоставлены в соответствии со ст. 14 ФЗ-152 "О персональных данных"'
         };
-        await connection.execute(`INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, 'data_exported', 'Скачана копия ПДн', ?, ?)`,
-            [email, getClientIp(req), req.headers['user-agent']]);
+        const ip = getClientIp(req) || '';
+        const ua = req.headers['user-agent'] || '';
+        await connection.execute(
+            `INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`,
+            [email, 'data_exported', 'Скачана копия ПДн', ip, ua]
+        );
         await connection.end();
-
         res.setHeader('Content-disposition', `attachment; filename=personal_data_${email}.json`);
         res.setHeader('Content-type', 'application/json');
         res.send(JSON.stringify(exportData, null, 2));
@@ -249,7 +256,6 @@ app.get('/export-data', limiter, async (req, res) => {
     }
 });
 
-// Обработка фидбека
 app.post('/submit-feedback', limiter, express.json(), async (req, res) => {
     const { feedback } = req.body;
     if (!feedback || typeof feedback !== 'string' || feedback.trim() === '') {
@@ -275,7 +281,6 @@ app.get('/Server-error', (req, res) => {
     res.status(500).render('500', { title: "Внутренняя ошибка сервера" });
 });
 
-// CSRF error handling (только если есть ошибки CSRF)
 app.use((err, req, res, next) => {
     if (err.code === 'EBADCSRFTOKEN') {
         res.status(403).send('Form tampered with');
@@ -284,7 +289,6 @@ app.use((err, req, res, next) => {
     }
 });
 
-// Middleware logging
 app.use((req, res, next) => {
     logger.info(`${req.method} ${req.url}`);
     next();
@@ -296,7 +300,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// 404
 app.use((req, res, next) => {
     res.status(404).render('404', { title: 'Страница не найдена' });
 });
