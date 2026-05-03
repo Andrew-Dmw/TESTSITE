@@ -26,17 +26,13 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 20
-
-      - run: npm ci
-
       - name: Init DB
         run: |
           mysql -h 127.0.0.1 -u root -proot -e "SHOW DATABASES;"
           mysql -h 127.0.0.1 -u root -proot my_diploma_test_db < db/init.sql
           mysql -h 127.0.0.1 -u root -proot my_diploma_test_db -e "SHOW TABLES;"
-
-      - name: Test
-        run: npm test
+      - run: npm ci
+      - run: npm test
         env:
           NODE_ENV: test
           DB_HOST: 127.0.0.1
