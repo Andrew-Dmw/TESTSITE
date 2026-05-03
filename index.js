@@ -124,10 +124,23 @@ app.post('/submit-feedback', limiter, express.json(), async (req, res) => {
 
 const csrfProtection = csurf({ cookie: false }); // Использует сессию
 
+// CSRF protection (отключаем для тестов)
 if (process.env.NODE_ENV !== 'test') {
+  const csrfProtection = csurf({ cookie: false });
   app.use(csrfProtection);
-}
 
+  // Middleware to pass CSRF token to views
+  app.use(function (req, res, next) {
+    res.locals.csrfToken = req.csrfToken();
+    next();
+  });
+} else {
+  // Для тестов: пустая заглушка, чтобы не ломать рендер
+  app.use(function (req, res, next) {
+    res.locals.csrfToken = 'test-token';
+    next();
+  });
+}
 // Middleware to pass CSRF token to views
 app.use(function (req, res, next) {
     res.locals.csrfToken = req.csrfToken();

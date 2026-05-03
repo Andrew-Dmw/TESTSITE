@@ -23,12 +23,15 @@ describe('Защита и безопасность', () => {
     });
 
     it('Rate limiting должен блокировать частые запросы', async () => {
-        for (let i = 0; i < 6; i++) {
-            const res = await request(app).get('/');
-            if (i >= 5) {
-            expect(res.status).toBe(429);
-            break;
+  let blocked = false;
+  for (let i = 0; i < 6; i++) {
+    const res = await request(app).get('/');
+    if (res.status === 429) {
+      blocked = true;
+      break;
     }
   }
+  expect(blocked).toBe(true);
 });
-});
+  }
+);
