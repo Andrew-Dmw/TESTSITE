@@ -12,5 +12,5 @@ const path = require('path');
   const sql = fs.readFileSync(path.join(__dirname, '../db/init.sql'), 'utf8');
   await connection.query(sql);
   await connection.end();
-  console.log('Test database initialized');
+  console.log('✅ Test database initialized');
 })();
