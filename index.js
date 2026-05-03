@@ -393,7 +393,7 @@ const start = () => {
 };
 
 // Тесты
-//if (require.main === module) {
+if (require.main === module) {
     start();
-//}
-//module.exports = app;
+}
+module.exports = app;
