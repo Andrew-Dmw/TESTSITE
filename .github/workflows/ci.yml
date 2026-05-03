@@ -21,27 +21,26 @@ jobs:
           --health-retries=5
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-      - name: Use Node.js 20
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Initialize test database
+      - name: Init DB
         run: |
+          mysql -h 127.0.0.1 -u root -proot -e "SHOW DATABASES;"
           mysql -h 127.0.0.1 -u root -proot my_diploma_test_db < db/init.sql
+          mysql -h 127.0.0.1 -u root -proot my_diploma_test_db -e "SHOW TABLES;"
 
-      - name: Run tests
+      - name: Test
         run: npm test
         env:
+          NODE_ENV: test
           DB_HOST: 127.0.0.1
           DB_USER: root
           DB_PASSWORD: root
           DB_DATABASE: my_diploma_test_db
-          NODE_ENV: test
           RATE_LIMIT_MAX: 5
