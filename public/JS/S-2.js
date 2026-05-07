@@ -138,8 +138,49 @@ butto.addEventListener ("click", D);
 //.innerHTML - это способ изменять содержимое элемента вместе с html.
 //"mouseover" - когда наведена мышка, "input" - ввод текста.
 
-//подтверждение имени
-document.addEventListener('DOMContentLoaded', () => {
+    function setCookie(name, value, days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        document.cookie = name + "=" + value + "; expires=" + date.toUTCString() + "; path=/; SameSite=Lax";
+    }
+    function getCookie(name) {
+        const value = "; " + document.cookie;
+        const parts = value.split("; " + name + "=");
+        if (parts.length === 2) return parts.pop().split(";").shift();
+        return null;
+    }
+
+    const banner = document.getElementById('cookie-banner');
+    if (banner) {
+        const consent = getCookie('cookie_consent');
+        if (consent === null) {
+            banner.style.display = 'block';
+        } else {
+            banner.style.display = 'none';
+        }
+
+        document.getElementById('accept-cookies').onclick = () => {
+            setCookie('cookie_consent', 'accepted', 365);
+            banner.style.display = 'none';
+            //отправить событие на сервер (логирование согласия)
+            fetch('/log-cookie-consent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'CSRF-Token': '<%= csrfToken %>' },
+                body: JSON.stringify({ consent: 'accepted' })
+            }).catch(e => console.error);
+        };
+        document.getElementById('reject-cookies').onclick = () => {
+            setCookie('cookie_consent', 'rejected', 365);
+            banner.style.display = 'none';
+            fetch('/log-cookie-consent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'CSRF-Token': '<%= csrfToken %>' },
+                body: JSON.stringify({ consent: 'rejected' })
+            }).catch(e => console.error);
+        };
+    }
+//подтверждение имени (не актуально)
+/*document.addEventListener('DOMContentLoaded', () => {
     const greetingElement = document.getElementById("grt");
     if (!greetingElement) return;
 
@@ -170,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         greetingElement.textContent = "Добро пожаловать, Гость!";
     }
 });
-
+*/
 //защита от повторного использования
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('myForm');
