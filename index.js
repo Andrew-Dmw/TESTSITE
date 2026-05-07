@@ -11,8 +11,11 @@ const csurf = require('csurf');
 const rateLimit = require("express-rate-limit");
 const helmet = require('helmet');
 const cors = require('cors');
+const bcrypt = require('bcrypt');
+const cookieParser = require('cookie-parser');
 
 const app = express();
+const pepper = process.env.PASSWORD_PEPPER;
 
 // EJS setup
 app.use(cors());
@@ -20,7 +23,8 @@ app.use('/.well-known', express.static(path.join(__dirname, '.well-known')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: false }));
-app.use(express.json()); // <= Добавлен глобальный парсер JSON
+app.use(express.json());
+app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public'), {
     setHeaders: (res, filePath) => {
         if (filePath.endsWith('.css')) {
@@ -87,7 +91,7 @@ app.use(session({
 
 app.use(helmet());
 
-// Rate limiting: в тестовой среде лимит очень большой
+// Rate limiting
 const maxRequests = process.env.NODE_ENV === 'test' ? 10000 : (process.env.RATE_LIMIT_MAX ? parseInt(process.env.RATE_LIMIT_MAX) : 100);
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -110,25 +114,75 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
+// Middleware isAuthenticated
+function isAuthenticated(req, res, next) {
+    if (req.session.userId) {
+        return next();
+    } else {
+        res.status(401).send({ error: 'Необходима авторизация' });
+    }
+}
+
+// Получение IP
+const getClientIp = (req) => {
+    return req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+};
+
 // ---------- Маршруты ----------
 app.get('/', (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.render('index', { title: 'Главная', csrfToken: res.locals.csrfToken });
-    console.log('web №1 worked');
+    res.render('index', {title: 'Авторизация', csrfToken: res.locals.csrfToken});
 });
 
-app.get('/contact', (req, res) => {
+app.get('/privacy', (req, res) => {
+    res.render('privacy', { title: 'Политика конфиденциальности'});
+});
+
+app.get('/main', isAuthenticated, (req, res) => {
+    const cookieConsent = req.cookies?.cookie_consent;
+    const showCookieBanner = !cookieConsent;
+    res.render('main', {
+        title: 'Главная',
+        csrfToken: res.locals.csrfToken,
+        user: { name: req.session.userName, email: req.session.userEmail },
+        showCookieBanner: showCookieBanner
+    });
+});
+
+app.get('/contact', isAuthenticated, (req, res) => {
     res.render('contact', { title: 'Контакты' });
-    console.log('web №2 worked');
 });
 
-app.get('/ER', (req, res) => {
-    res.render('ER', { title: "Формально-юридическая модель", layout: false });
+app.get('/ER', isAuthenticated, (req, res) => {
+    res.render('ER', {
+        title: "Формально-юридическая модель",
+        layout: false,
+        user: req.session.userId ? { email: req.session.userEmail, name: req.session.userName } : null
+    });
 });
 
-app.post('/save-data', limiter, async (req, res) => {
+app.get('/profile', isAuthenticated, (req, res) => {
+    res.render('profile', {
+        title: 'Профиль пользователя',
+        csrfToken: res.locals.csrfToken,
+        user: {
+            id: req.session.userId,
+            name: req.session.userName,
+            email: req.session.userEmail
+        }
+    });
+});
+
+app.post('/log-cookie-consent', limiter, express.json(), isAuthenticated, async (req, res) => {
+    const { consent } = req.body;
+    const email = req.session.userEmail;
+    const ip = getClientIp(req);
+    console.log(`Cookie consent: ${consent}, user: ${email}, IP: ${ip}, time: ${new Date().toISOString()}`);
+    res.status(200).json({ status: 'logged' });
+});
+
+app.post('/save-data', limiter, isAuthenticated, async (req, res) => {
     try {
-        console.log("req.body:", req.body);
         const { Z, Like, COMMENT, dateTime, honeypot } = req.body;
         if (honeypot) {
             console.log("Бот обнаружен!");
@@ -152,17 +206,14 @@ app.post('/save-data', limiter, async (req, res) => {
     }
 });
 
-const getClientIp = (req) => {
-    return req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-};
-
-app.post('/revoke-consent', limiter, async (req, res) => {
+app.post('/revoke-consent', limiter, isAuthenticated, async (req, res) => {
+    const email = req.session.userEmail;
+    if (!email || !validator.isEmail(email)) {
+        return res.status(400).send('Некорректный email в сессии');
+    }
+    let connection;
     try {
-        const { email } = req.body;
-        if (!email || !validator.isEmail(email)) {
-            return res.status(400).send('Некорректный email');
-        }
-        const connection = await mysql.createConnection(dbConfig);
+        connection = await mysql.createConnection(dbConfig);
         const [users] = await connection.execute('SELECT id FROM users WHERE email = ?', [email]);
         if (users.length === 0) {
             await connection.end();
@@ -170,30 +221,32 @@ app.post('/revoke-consent', limiter, async (req, res) => {
         }
         const userId = users[0].id;
         await connection.execute(
-            `UPDATE consents SET is_active = FALSE, revoked_at = NOW() WHERE user_id = ? AND is_active = TRUE`,
+            'UPDATE consents SET is_active = FALSE, revoked_at = NOW() WHERE user_id = ? AND is_active = TRUE',
             [userId]
         );
         const ip = getClientIp(req) || '';
         const ua = req.headers['user-agent'] || '';
         await connection.execute(
-            `INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`,
+            'INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
             [email, 'consent_revoked', 'Отзыв всех согласий', ip, ua]
         );
         await connection.end();
-        res.send(`<h3>Согласие отозвано</h3><p>Ваши персональные данные будут удалены в течение 30 дней в соответствии со ст. 9 и 21 ФЗ-152.</p><a href="/ER">Вернуться к модели</a>`);
+        res.redirect('/ER');
     } catch (error) {
         console.error(error);
+        if (connection) await connection.end();
         res.status(500).redirect('/Server-error');
     }
 });
 
-app.post('/delete-data', limiter, async (req, res) => {
+app.post('/delete-data', limiter, isAuthenticated, async (req, res) => {
+    const email = req.session.userEmail;
+    if (!email || !validator.isEmail(email)) {
+        return res.status(400).send('Некорректный email в сессии');
+    }
+    let connection;
     try {
-        const { email } = req.body;
-        if (!email || !validator.isEmail(email)) {
-            return res.status(400).send('Некорректный email');
-        }
-        const connection = await mysql.createConnection(dbConfig);
+        connection = await mysql.createConnection(dbConfig);
         const [users] = await connection.execute('SELECT id FROM users WHERE email = ?', [email]);
         if (users.length === 0) {
             await connection.end();
@@ -204,24 +257,26 @@ app.post('/delete-data', limiter, async (req, res) => {
         const ip = getClientIp(req) || '';
         const ua = req.headers['user-agent'] || '';
         await connection.execute(
-            `INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`,
+            'INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
             [email, 'data_deleted', 'Персональные данные удалены', ip, ua]
         );
         await connection.end();
-        res.send(`<h3>Данные удалены</h3><p>Ваши персональные данные удалены из системы. Ваши права на забвение реализованы (ст. 21 ФЗ-152).</p><a href="/ER">Вернуться к модели</a>`);
+        res.redirect('/ER');
     } catch (error) {
         console.error(error);
+        if (connection) await connection.end();
         res.status(500).redirect('/Server-error');
     }
 });
 
-app.get('/export-data', limiter, async (req, res) => {
+app.get('/export-data', limiter, isAuthenticated, async (req, res) => {
+    const email = req.session.userEmail;
+    if (!email || !validator.isEmail(email)) {
+        return res.status(400).send('Некорректный email в сессии');
+    }
+    let connection;
     try {
-        const email = req.query.email;
-        if (!email || !validator.isEmail(email)) {
-            return res.status(400).send('Некорректный email');
-        }
-        const connection = await mysql.createConnection(dbConfig);
+        connection = await mysql.createConnection(dbConfig);
         const [users] = await connection.execute('SELECT id, name, email, created_at FROM users WHERE email = ?', [email]);
         if (users.length === 0) {
             await connection.end();
@@ -243,7 +298,7 @@ app.get('/export-data', limiter, async (req, res) => {
         const ip = getClientIp(req) || '';
         const ua = req.headers['user-agent'] || '';
         await connection.execute(
-            `INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)`,
+            'INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
             [email, 'data_exported', 'Скачана копия ПДн', ip, ua]
         );
         await connection.end();
@@ -252,11 +307,12 @@ app.get('/export-data', limiter, async (req, res) => {
         res.send(JSON.stringify(exportData, null, 2));
     } catch (error) {
         console.error(error);
+        if (connection) await connection.end();
         res.status(500).redirect('/Server-error');
     }
 });
 
-app.post('/submit-feedback', limiter, express.json(), async (req, res) => {
+app.post('/submit-feedback', limiter, express.json(), isAuthenticated, async (req, res) => {
     const { feedback } = req.body;
     if (!feedback || typeof feedback !== 'string' || feedback.trim() === '') {
         return res.status(400).json({ error: "No feedback provided" });
@@ -271,6 +327,102 @@ app.post('/submit-feedback', limiter, express.json(), async (req, res) => {
         console.error("Ошибка БД при сохранении фидбека:", error);
         res.status(500).json({ error: "Database error" });
     }
+});
+
+app.post('/register', limiter, express.json(), async (req, res) => {
+    const { email, name, password, privacyConsent } = req.body;
+    if (!email || !validator.isEmail(email)) {
+        return res.status(400).json({ error: 'Некорректный email' });
+    }
+    if (!name || name.trim().length < 2) {
+        return res.status(400).json({ error: 'Имя должно быть не менее 2 символов' });
+    }
+    if (!password || password.length < 8) {
+        return res.status(400).json({ error: 'Пароль должен быть не менее 8 символов' });
+    }
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+        return res.status(400).json({ error: 'Пароль должен содержать хотя бы одну букву, одну цифру и один спецсимвол' });
+    }
+    if (!privacyConsent) {
+        return res.status(400).json({ error: 'Необходимо согласие с политикой конфиденциальности' });
+    }
+
+    let connection;
+    try {
+        connection = await mysql.createConnection(dbConfig);
+        const [existing] = await connection.execute('SELECT id FROM users WHERE email = ?', [email]);
+        if (existing.length > 0) {
+            await connection.end();
+            return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
+        }
+        const pepperedPassword = password + pepper;
+        const saltRounds = 10;
+        const passwordHash = await bcrypt.hash(pepperedPassword, saltRounds);
+        const [result] = await connection.execute(
+            'INSERT INTO users (email, name, password_hash, privacy_consent_given, privacy_consent_date) VALUES (?, ?, ?, ?, NOW())',
+            [email, name.trim(), passwordHash, true]
+        );
+        const userId = result.insertId;
+        await connection.execute(
+            'INSERT INTO consents (user_id, purpose, version, is_active, given_at, ip_address, user_agent) VALUES (?, ?, ?, ?, NOW(), ?, ?)',
+            [userId, 'privacy_policy', 'v1.0', true, getClientIp(req), req.headers['user-agent'] || '']
+        );
+        req.session.userId = userId;
+        req.session.userEmail = email;
+        req.session.userName = name.trim();
+        await connection.end();
+        res.redirect('/main');
+    } catch (error) {
+        if (connection) await connection.end();
+        console.error(error);
+        res.status(500).send({ error: 'Ошибка сервера' });
+    }
+});
+
+app.post('/login', limiter, express.json(), async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email и пароль обязательны' });
+    }
+    let connection;
+    try {
+        connection = await mysql.createConnection(dbConfig);
+        const [users] = await connection.execute(
+            'SELECT id, email, name, password_hash FROM users WHERE email = ?',
+            [email]
+        );
+        if (users.length === 0) {
+            await connection.end();
+            return res.status(401).json({ error: 'Неверный email или пароль' });
+        }
+        const user = users[0];
+        const pepperedPassword = password + pepper;
+        const isValid = await bcrypt.compare(pepperedPassword, user.password_hash);
+        if (!isValid) {
+            await connection.end();
+            return res.status(401).json({ error: 'Неверный email или пароль' });
+        }
+        req.session.userId = user.id;
+        req.session.userEmail = user.email;
+        req.session.userName = user.name;
+        await connection.end();
+        res.redirect('/main');
+    } catch (error) {
+        if (connection) await connection.end();
+        console.error(error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+app.post('/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            return res.status(500).json({ error: 'Не удалось выйти' });
+        }
+        res.clearCookie('connect.sid');
+        res.json({ message: 'Вы вышли из системы' });
+    });
 });
 
 app.get('/thank-you', (req, res) => {

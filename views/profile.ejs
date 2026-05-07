@@ -1,0 +1,11 @@
+    <div class="container">
+        <h1>Профиль пользователя</h1>
+        <p><strong>Имя:</strong> <%= user.name %></p>
+        <p><strong>Email:</strong> <%= user.email %></p>
+        <p><strong>ID пользователя:</strong> <%= user.id %></p>
+        <a href="/main">На главную</a> | 
+        <form action="/logout" method="post" style="display: inline;">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit">Выйти</button>
+        </form>
+    </div>
