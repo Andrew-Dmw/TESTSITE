@@ -423,7 +423,7 @@ app.post('/logout', (req, res) => {
 });
 
 app.get('/thank-you', (req, res) => {
-    res.render('thank-you', { title: 'Спасибо за ваш отзыв!', redirectUrl: '/' });
+    res.render('thank-you', { title: 'Спасибо за ваш отзыв!', redirectUrl: '/main' });
 });
 
 app.get('/Server-error', (req, res) => {
