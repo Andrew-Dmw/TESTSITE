@@ -131,7 +131,7 @@ const getClientIp = (req) => {
 // ---------- Маршруты ----------
 app.get('/', (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.render('index', {title: 'Авторизация', csrfToken: res.locals.csrfToken});
+    res.render('index', {title: 'Авторизация', csrfToken: res.locals.csrfToken, layout: false,});
 });
 
 app.get('/privacy', (req, res) => {
@@ -423,7 +423,7 @@ app.post('/logout', (req, res) => {
 });
 
 app.get('/thank-you', (req, res) => {
-    res.render('thank-you', { title: 'Спасибо за ваш отзыв!', redirectUrl: '/main' });
+    res.render('thank-you', { title: 'Спасибо за ваш отзыв!', redirectUrl: '/main', layout: false, });
 });
 
 app.get('/Server-error', (req, res) => {
