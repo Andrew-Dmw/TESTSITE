@@ -149,10 +149,6 @@ app.get('/main', isAuthenticated, (req, res) => {
     });
 });
 
-app.get('/contact', isAuthenticated, (req, res) => {
-    res.render('contact', { title: 'Контакты' });
-});
-
 app.get('/ER', isAuthenticated, (req, res) => {
     res.render('ER', {
         title: "Формально-юридическая модель",
