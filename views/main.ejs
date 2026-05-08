@@ -7,14 +7,14 @@
     </p>
     <div class="Cell">
         <div class="Lade">
-        <% if (user) { %>
-        <p>Здравствуйте, <%= user.name %>! <a href="/profile">Профиль</p> 
-        <form action="/logout" method="post" style="display: inline;">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit">Выйти</button>
-        </form></p>
-        <% } %>
-        <p>Мы очень рады, что вы посетили данный сайт!<br>Чувствуйте себя как дома:)</p>
+          <% if (user) { %>
+              <p>Здравствуйте, <%= user.name %>! | <a href="/profile">Профиль</a></p>
+              <form action="/logout" method="post" style="display: inline;">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button type="submit">Выйти</button>
+              </form>
+          <% } %>
+          <p>Мы очень рады, что вы посетили данный сайт!<br>Чувствуйте себя как дома:)</p>
         </div>
     </div>
     </header>
