@@ -13,7 +13,7 @@
 
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #c2e0ff 0%, #b2f0ff 100%);
         min-height: 100vh;
         display: flex;
         justify-content: center;
@@ -117,7 +117,6 @@
         <h1>Профиль пользователя</h1>
         <p><strong>Имя:</strong> <%= user.name %></p>
         <p><strong>Email:</strong> <%= user.email %></p>
-        <p><strong>ID пользователя:</strong> <%= user.id %></p>
         <a href="/main">На главную</a> | 
         <form action="/logout" method="post" style="display: inline;">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
