@@ -165,6 +165,7 @@ app.get('/profile', isAuthenticated, (req, res) => {
     res.render('profile', {
         title: 'Профиль пользователя',
         csrfToken: res.locals.csrfToken,
+        layout: false,
         user: {
             id: req.session.userId,
             name: req.session.userName,
