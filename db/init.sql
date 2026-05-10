@@ -65,9 +65,19 @@ CREATE TABLE IF NOT EXISTS feedback (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Демо-пользователь (для тестирования)
-INSERT IGNORE INTO users (email, name) VALUES ('demo@example.com', 'Демо Пользователь');
-INSERT IGNORE INTO user_data (user_id, field_name, field_value)
-SELECT id, 'phone', '+7 999 123-45-67' FROM users WHERE email = 'demo@example.com';
-INSERT IGNORE INTO consents (user_id, purpose, version, is_active)
-SELECT id, 'регистрация', 'v1.0', TRUE FROM users WHERE email = 'demo@example.com';
+-- Демо-пользователь (пароль: demo123!)
+INSERT INTO users (email, name, password_hash, privacy_consent_given, privacy_consent_date) 
+VALUES ('demo@example.com', 'Демо Пользователь', '$2b$10$o5xT.Tn6hXIuOg2VFXmcOOUeaQnU30afrJ/rDHYeBCLHN4.eOEUS2', TRUE, NOW())
+ON DUPLICATE KEY UPDATE name = VALUES(name), password_hash = VALUES(password_hash);
+
+-- Добавляем согласие
+INSERT INTO consents (user_id, purpose, version, is_active, given_at, ip_address, user_agent)
+SELECT id, 'регистрация', 'v1.0', TRUE, NOW(), '127.0.0.1', 'demo'
+FROM users WHERE email = 'demo@example.com'
+ON DUPLICATE KEY UPDATE purpose = VALUES(purpose);
+
+-- Добавляем демо-данные (телефон)
+INSERT INTO user_data (user_id, field_name, field_value)
+SELECT id, 'phone', '+7 999 123-45-67'
+FROM users WHERE email = 'demo@example.com'
+ON DUPLICATE KEY UPDATE field_value = VALUES(field_value);

@@ -527,86 +527,27 @@
         </div>
     </div>
 
-    <!-- Вкладка 4: Образцы документов -->
-    <div id="tab4" class="tab-content">
-        <div class="doc-cards">
-                <a href="/samples/complaint_rkn.docx" download class="doc-item">
-                    <i class="fas fa-file-alt"></i>
-                    <h4>Жалоба в РКН</h4>
-                    <p>Образец жалобы на незаконную обработку ПД</p>
-                    <span class="btn-download"><i class="fas fa-download"></i> Скачать .docx</span>
-                </a>
-                <a href="/samples/lawsuit_court.docx" download class="doc-item">
-                    <i class="fas fa-file-word"></i>
-                    <h4>Иск о защите данных</h4>
-                    <p>В суд общей юрисдикции, компенсация морального вреда</p>
-                    <span class="btn-download"><i class="fas fa-download"></i> Скачать .docx</span>
-                </a>
-                <a href="/samples/police_report.docx" download class="doc-item">
-                    <i class="fas fa-file-alt"></i>
-                    <h4>Рапорт (УУП)</h4>
-                    <p>По ст. 272.1 УК РФ / ст. 137 УК РФ</p>
-                    <span class="btn-download"><i class="fas fa-download"></i> Скачать .docx</span>
-                </a>
-                <a href="/samples/inspection_report.docx" download class="doc-item">
-                    <i class="fas fa-file-code"></i>
-                    <h4>Протокол осмотра сайта</h4>
-                    <p>Фиксация цифровых доказательств</p>
-                    <span class="btn-download"><i class="fas fa-download"></i> Скачать .docx</span>
-                </a>
-            <p style="margin-top: 20px;"><i class="fas fa-info-circle"></i> В реальной версии файлы будут сгенерированы сервером или предложены для скачивания.</p>
-        </div>
-    </div>
+<!-- Отзыв согласия -->
+<h3>Отзыв согласия на обработку персональных данных</h3>
+<form action="/revoke-consent" method="post">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button type="submit">Отозвать моё согласие</button>
+</form>
+<p class="small">Согласно ст. 9 ФЗ-152, после отзыва оператор обязан удалить ваши данные в течение 30 дней.</p>
 
-    <!-- Вкладка 5: Модель взаимодействия (схема) -->
-    <div id="tab5" class="tab-content">
-        <div class="card">
-            <h2><i class="fas fa-project-diagram"></i> Взаимодействие субъектов при утечке данных</h2>
-            <div class="interaction-scheme">
-                <div class="scheme-node"><i class="fas fa-user"></i> Гражданин (субъект ПДн)</div>
-                <div class="scheme-arrow"><i class="fas fa-arrow-right"></i></div>
-                <div class="scheme-node"><i class="fas fa-building"></i> Роскомнадзор</div>
-                <div class="scheme-arrow"><i class="fas fa-arrow-right"></i></div>
-                <div class="scheme-node"><i class="fas fa-balance-scale"></i> Суд / МВД</div>
-            </div>
-            <p><strong>Алгоритм:</strong> Гражданин подаёт жалобу в РКН (30 дней рассмотрения) или заявление в полицию (проверка 3-10 суток). РКН вправе заблокировать ресурс, МВД проводит проверку и при наличии состава преступления возбуждает уголовное дело.</p>
-            <h3 style="margin-top: 30px;">Сроки уведомления об утечке (ст. 18.1 152-ФЗ)</h3>
-            <ul>
-                <li><span class="highlight">24 часа</span> — первичное уведомление Роскомнадзора</li>
-                <li><span class="highlight">72 часа</span> — результаты внутреннего расследования</li>
-            </ul>
-            <table class="stats-table">
-                <tr><th>Правовое понятие</th><th>Реализация в модели</th></tr>
-                <tr><td>Субъект ПДн</td><td>Пользователь, заполняющий форму регистрации (id в БД)</td></tr>
-                <tr><td>Оператор</td><td>Владелец сайта (реквизиты в БД)</td></tr>
-                <tr><td>Согласие</td><td>Чекбокс + запись в таблице `consents` с хэшем документа</td></tr>
-            </table>
-            <!-- Отзыв согласия -->
-            <h3>Отзыв согласия на обработку персональных данных</h3>
-            <form action="/revoke-consent" method="post">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <label>Email: <input type="email" name="email" required></label>
-                <button type="submit">Отозвать согласие</button>
-            </form>
-            <p class="small">Согласно ст. 9 ФЗ-152, после отзыва оператор обязан удалить ваши данные в течение 30 дней.</p>
+<!-- Запрос на удаление -->
+<h3>Запрос на удаление персональных данных</h3>
+<form action="/delete-data" method="post">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button type="submit">Удалить мои данные</button>
+</form>
 
-            <!-- Запрос на удаление -->
-            <h3>Запрос на удаление персональных данных</h3>
-            <form action="/delete-data" method="post">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <label>Email: <input type="email" name="email" required></label>
-                <button type="submit">Удалить мои данные</button>
-            </form>
-
-            <!-- Экспорт данных (GET) -->
-            <h3>Получить копию своих данных</h3>
-            <form action="/export-data" method="get">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <label>Email: <input type="email" name="email" required></label>
-                <button type="submit">Скачать JSON</button>
-            </form>
-        </div>
-    </div>
+<!-- Экспорт данных (GET) -->
+<h3>Получить копию своих данных</h3>
+<form action="/export-data" method="get">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button type="submit">Скачать JSON</button>
+</form>
 
     <footer class="footer">
         <p>&copy; 2026 МО МВД России «Усть-Кутский». Преддипломная практика. Все права защищены.</p>

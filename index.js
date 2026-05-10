@@ -14,6 +14,11 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const cookieParser = require('cookie-parser');
 
+const pepper = config.pepper;
+if (!pepper) {
+    console.error('❌ PASSWORD_PEPPER не задан в .env');
+    process.exit(1);
+}
 const app = express();
 
 // EJS setup
@@ -57,6 +62,7 @@ app.use(
     },
   })
 );
+app.set('trust proxy', true);
 
 // Database config
 const dbConfig = {
@@ -347,32 +353,40 @@ app.post('/register', limiter, express.json(), async (req, res) => {
     let connection;
     try {
         connection = await mysql.createConnection(dbConfig);
+        // Проверка, не занят ли email
         const [existing] = await connection.execute('SELECT id FROM users WHERE email = ?', [email]);
         if (existing.length > 0) {
             await connection.end();
             return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
         }
-        const pepperedPassword = password + config.pepper;
+
+        const pepperedPassword = password + pepper;
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(pepperedPassword, saltRounds);
+
+        // Вставка нового пользователя
         const [result] = await connection.execute(
             'INSERT INTO users (email, name, password_hash, privacy_consent_given, privacy_consent_date) VALUES (?, ?, ?, ?, NOW())',
             [email, name.trim(), passwordHash, true]
         );
         const userId = result.insertId;
+
+        // Вставка записи о согласии
         await connection.execute(
             'INSERT INTO consents (user_id, purpose, version, is_active, given_at, ip_address, user_agent) VALUES (?, ?, ?, ?, NOW(), ?, ?)',
             [userId, 'privacy_policy', 'v1.0', true, getClientIp(req), req.headers['user-agent'] || '']
         );
+
         req.session.userId = userId;
         req.session.userEmail = email;
         req.session.userName = name.trim();
+
         await connection.end();
-        res.redirect('/main/ER');
+        return res.redirect('/main');
     } catch (error) {
         if (connection) await connection.end();
         console.error(error);
-        res.status(500).send({ error: 'Ошибка сервера' });
+        return res.status(500).send({ error: 'Ошибка сервера' });
     }
 });
 
@@ -403,11 +417,11 @@ app.post('/login', limiter, express.json(), async (req, res) => {
         req.session.userEmail = user.email;
         req.session.userName = user.name;
         await connection.end();
-        res.redirect('/main/ER');
+        return res.redirect('/main');
     } catch (error) {
         if (connection) await connection.end();
         console.error(error);
-        res.status(500).json({ error: 'Ошибка сервера' });
+        return res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
