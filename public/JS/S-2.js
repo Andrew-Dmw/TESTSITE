@@ -1,3 +1,7 @@
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+if (!csrfToken) {
+    console.warn('CSRF token not found');
+}
 console.log("S-2 worked!");
 // Генерация и вывод ASCII-сердечка с именем X10
 (function drawHeart() {

@@ -5,38 +5,153 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Регистрация\Вход</title>
     <meta name="csrf-token" content="<%= csrfToken %>">
+    <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+    .container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 500px;
+        padding: 30px;
+        transition: transform 0.3s;
+    }
+    .container:hover {
+        transform: translateY(-5px);
+    }
+    h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 28px;
+    }
+    .tabs {
+        display: flex;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    .tab-btn {
+        flex: 1;
+        background: none;
+        border: none;
+        padding: 12px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        color: #718096;
+        transition: 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .tab-btn.active {
+        color: #4c51bf;
+        border-bottom: 3px solid #4c51bf;
+    }
+    .tab-btn:hover {
+        color: #2d3748;
+        background: #f7fafc;
+    }
+    .tab-content {
+        transition: 0.3s;
+    }
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    input {
+        padding: 12px 15px;
+        border: 1px solid #cbd5e0;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: 0.2s;
+        width: 100%;
+    }
+    input:focus {
+        outline: none;
+        border-color: #4c51bf;
+        box-shadow: 0 0 0 3px rgba(76,81,191,0.2);
+    }
+    label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #4a5568;
+    }
+    button[type="submit"] {
+        background: #4c51bf;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    button[type="submit"]:hover {
+        background: #3c41a1;
+        transform: scale(1.02);
+    }
+    a {
+        color: #4c51bf;
+        text-decoration: none;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+    @media (max-width: 600px) {
+        .container {
+            padding: 20px;
+        }
+        h1 {
+            font-size: 24px;
+        }
+    }
+</style>
 </head>
 <body>
+<div class="container">
     <h1>Добро пожаловать</h1>
-
-    <div style="display: flex; gap: 40px; flex-wrap: wrap; justify-content: center;">
-        <!-- Форма регистрации -->
-        <div style="flex: 1; min-width: 250px; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background: #f9f9f9;">
-            <h2>Регистрация</h2>
-            <form id="register-form" method="post" action="/register">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <input type="email" name="email" placeholder="Email" required style="width: 100%; margin-bottom: 10px; padding: 8px;">
-                <input type="text" name="name" placeholder="Имя" required style="width: 100%; margin-bottom: 10px; padding: 8px;">
-                <input type="password" name="password" placeholder="Пароль" required style="width: 100%; margin-bottom: 10px; padding: 8px;">
-                <label style="display: block; margin-bottom: 10px;">
-                    <input type="checkbox" name="privacyConsent" required> Я согласен с <a href="/privacy">политикой конфиденциальности</a>
-                </label>
-                <button type="submit" style="width: 100%; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 4px;">Зарегистрироваться</button>
-            </form>
-        </div>
-
-        <!-- Форма входа -->
-        <div style="flex: 1; min-width: 250px; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background: #f9f9f9;">
-            <h2>Вход</h2>
-            <form id="login-form" method="post" action="/login">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <input type="email" name="email" placeholder="Email" required style="width: 100%; margin-bottom: 10px; padding: 8px;">
-                <input type="text" name="name" placeholder="Имя" required style="width: 100%; margin-bottom: 10px; padding: 8px;">
-                <input type="password" name="password" placeholder="Пароль" required style="width: 100%; margin-bottom: 10px; padding: 8px;">
-                <button type="submit" style="width: 100%; padding: 10px; background: #2196F3; color: white; border: none; border-radius: 4px;">Войти</button>
-            </form>
-        </div>
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="login">Вход</button>
+        <button class="tab-btn" data-tab="register">Регистрация</button>
     </div>
+    <div id="login-tab" class="tab-content active">
+        <form id="login-form" method="post" action="/login">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Пароль" required>
+            <button type="submit">Войти</button>
+        </form>
+    </div>
+    <div id="register-tab" class="tab-content" style="display:none;">
+        <form id="register-form" method="post" action="/register">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="text" name="name" placeholder="Имя" required>
+            <input type="password" name="password" placeholder="Пароль" required>
+            <label>
+                <input type="checkbox" name="privacyConsent" required> Я согласен с <a href="/privacy">политикой конфиденциальности</a>
+            </label>
+            <button type="submit">Зарегистрироваться</button>
+        </form>
+    </div>
+</div>
     <script src="/js/S-4.js"></script>
 </body>
 </html>

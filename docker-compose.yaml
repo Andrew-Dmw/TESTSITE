@@ -38,6 +38,7 @@ services:
       NODE_ENV: ${NODE_ENV}
       PORT: ${PORT}
       SESSION_SECRET: ${SESSION_SECRET}
+      PASSWORD_PEPPER: ${PASSWORD_PEPPER}
     networks:
       - app_network
 
