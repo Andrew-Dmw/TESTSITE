@@ -15,7 +15,6 @@ const bcrypt = require('bcrypt');
 const cookieParser = require('cookie-parser');
 
 const app = express();
-const pepper = process.env.PASSWORD_PEPPER;
 
 // EJS setup
 app.use(cors());
@@ -353,7 +352,7 @@ app.post('/register', limiter, express.json(), async (req, res) => {
             await connection.end();
             return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
         }
-        const pepperedPassword = password + pepper;
+        const pepperedPassword = password + config.pepper;
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(pepperedPassword, saltRounds);
         const [result] = await connection.execute(
