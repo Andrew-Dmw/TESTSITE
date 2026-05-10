@@ -10,6 +10,7 @@ const config = {
         password: process.env.DB_PASSWORD || '',
         database: process.env.DB_DATABASE || 'my_diploma_db',
     },
-    sessionSecret: process.env.SESSION_SECRET || 'fallback_secret'
+    sessionSecret: process.env.SESSION_SECRET || 'fallback_secret',
+    pepper: process.env.PASSWORD_PEPPER || 'fallback_pepper'
 };
 module.exports = config;
