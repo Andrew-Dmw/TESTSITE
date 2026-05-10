@@ -368,7 +368,7 @@ app.post('/register', limiter, express.json(), async (req, res) => {
         req.session.userEmail = email;
         req.session.userName = name.trim();
         await connection.end();
-        res.redirect('/main');
+        res.redirect('/main/ER');
     } catch (error) {
         if (connection) await connection.end();
         console.error(error);
@@ -403,7 +403,7 @@ app.post('/login', limiter, express.json(), async (req, res) => {
         req.session.userEmail = user.email;
         req.session.userName = user.name;
         await connection.end();
-        res.redirect('/main');
+        res.redirect('/main/ER');
     } catch (error) {
         if (connection) await connection.end();
         console.error(error);
