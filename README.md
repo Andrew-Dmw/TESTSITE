@@ -7,8 +7,6 @@
 - Дмитриев Андрей  
 - Электронная почта: annabankova950@gmail.com
 
-По всем вопросам обращайтесь на указанный email.
-
 ## Лицензия
 
 ISC
@@ -24,6 +22,7 @@ ISC
   - **Право на выгрузку копии ПДн** (ст. 14) – пользователь может скачать свои данные в формате JSON.
   - **Журналирование событий** – все юридически значимые действия (отзыв, удаление, экспорт) фиксируются с указанием IP-адреса, User-Agent и временной метки.
   - **Шифрование канала связи** – весь трафик защищён протоколом HTTPS (самоподписанный сертификат для демонстрации, в продакшене следует использовать доверенный сертификат).
+  - **Уведомление об утечке (ст. 18.1)** – автоматическое обнаружение подозрительной активности (частые экспорты данных) и логирование инцидентов.
 
 ### Стек технологий
 
@@ -31,25 +30,31 @@ ISC
   - Backend: Node.js + Express
   - База данных: MySQL 8.0
   - Администрирование БД: phpMyAdmin (веб-интерфейс, доступен только с локального хоста)
-  - Аутентификация: сессии + CSRF-токены
+  - Аутентификация: сессии + CSRF-токены, хранение сессий в памяти (для простоты)
   - Безопасность: Helmet, rate limiting, honeypot, экранирование ввода
   - Контейнеризация: Docker + Docker Compose
   - Фронтенд: HTML5, CSS3 (адаптивный дизайн), JavaScript
 
 ### Структура базы данных
 
-  - `users` – зарегистрированные пользователи (субъекты ПДн)
+  - `users` – зарегистрированные пользователи (субъекты ПДн) с полем `role` (user/admin)
   - `consents` – история согласий на обработку ПДн
   - `event_logs` – журнал юридически значимых событий
   - `user_data` – дополнительные данные пользователя (для экспорта)
   - `reviews` – отзывы (из основного сайта)
   - `feedback` – предложения пользователей
+  - `security_incident_logs` – журнал инцидентов безопасности (ст. 18.1 152-ФЗ)
 
 ### Эндпоинты модели
 
   - `POST /revoke-consent` – отзыв согласия
   - `POST /delete-data` – удаление персональных данных
   - `GET /export-data` – выгрузка копии ПДн в JSON
+  - `POST /register` – регистрация нового пользователя
+  - `POST /login` – вход в систему
+  - `POST /logout` – выход
+  - `GET /profile` – профиль пользователя
+  - `GET /admin/incidents` – панель администратора (журнал инцидентов)
 
 ### Образцы юридических документов
 
@@ -72,6 +77,7 @@ ISC
 | ст. 14 (доступ к ПДн) | Эндпоинт `/export-data` предоставляет копию данных в машиночитаемом формате |
 | ст. 21 (удаление) | Эндпоинт `/delete-data` немедленно удаляет ПДн из БД |
 | ст. 19 (безопасность) | HTTPS, CSRF, rate limiting, helmet, экранирование ввода |
+| ст. 18.1 (уведомление об утечке) | Автоматическое обнаружение подозрительной активности и логирование инцидентов |
 
 ---
 
@@ -96,8 +102,14 @@ ISC
 
 ### Тестовые данные
 
-Для быстрой проверки вы можете зарегистрироваться самостоятельно (пароль должен содержать не менее 8 символов, включая буквы, цифры и спецсимволы).  
-*Ранее существовавший демо-пользователь `demo@example.com` без пароля удалён из-за внедрения полноценной авторизации.*
+Для быстрой проверки вы можете использовать предустановленного демо-администратора:
+
+  - Email: `demo@example.com`
+  - Пароль: `demo123!`
+  - Роль: `admin` (доступ к панели `/admin/incidents`)
+
+Обычные пользователи могут зарегистрироваться самостоятельно (пароль должен содержать не менее 8 символов, включая буквы, цифры и спецсимволы).  
+*Ранее существовавший демо-пользователь без пароля удалён из-за внедрения полноценной авторизации.*
 
 ### Для входа в phpMyAdmin используйте:
 
@@ -110,8 +122,15 @@ ISC
 1. Откройте браузер и перейдите на `http://localhost:8080`
 2. Введите учётные данные, указанные выше
 3. В левой колонке выберите базу `my_diploma_db`
-4. Вы увидите все таблицы: users, consents, event_logs, user_data, reviews, feedback
+4. Вы увидите все таблицы: users, consents, event_logs, user_data, reviews, feedback, security_incident_logs
 5. Чтобы посмотреть логи юридических событий, откройте таблицу `event_logs` – там будут записи с IP-адресами, типом действия и временем.
+
+### Административная панель
+
+Пользователи с ролью `admin` имеют доступ к журналу инцидентов безопасности:
+
+  - Перейдите на страницу `/admin/incidents` (ссылка появляется в навигации после входа под администратором).
+  - Здесь отображаются все зафиксированные подозрительные активности (например, частые экспорты данных).
 
 ### Адаптивный дизайн
 
@@ -162,27 +181,13 @@ ISC
 
 ---
 
-## Схемы архитектуры (описание)
+## Схемы архитектуры
 
-В дипломной работе приведены подробные схемы архитектуры, ER-диаграммы и блок-схемы. Ниже краткое текстовое описание:
-
-1. **Архитектура компонентов (контейнеры и связи):**  
-   Docker‑контейнеры: Nginx (порты 80,443), Node.js (3000 internal), MySQL (3306 internal), phpMyAdmin (8080 internal). Клиент общается с Nginx по HTTPS, Nginx проксирует на Node.js, Node.js обращается к MySQL. Администратор подключается к phpMyAdmin через localhost:8080.
-
-2. **База данных (ER-диаграмма):**  
-   Таблицы `users`, `consents`, `event_logs`, `user_data`, `reviews`, `feedback`. Связи: `users` → `consents` (один ко многим), `users` → `user_data` (один ко многим). `event_logs` ссылается на `users.email` (не внешний ключ).
-
-3. **Блок-схема отзыва согласия:**  
-   POST /revoke-consent → валидация email → поиск пользователя → обновление `consents.is_active=0` → вставка в `event_logs` → редирект на /ER.
-
-4. **Многоуровневая модель доступа:**  
-   Публичный интернет → только Nginx (порт 80/443). Локальный доступ (администратор) → phpMyAdmin:8080. Внутренняя Docker-сеть → Node.js:3000 и MySQL:3306.
-
-5. **Docker-контейнеризация:**  
-   Все сервисы описаны в `docker-compose.yml` с томами и сетями. Проброс портов только для Nginx (80,443) и phpMyAdmin (8080 на 127.0.0.1).
+В дипломной работе приведены подробные схемы архитектуры, ER-диаграммы и блок-схемы.
 
 Для отображения отключите ADblock и прочие блокировщики рекламы
 
+### 1. Архитектура компонентов
 ```mermaid
 flowchart TB
     subgraph DockerHost [Docker Host]
@@ -197,50 +202,61 @@ flowchart TB
     phpMyAdmin -->|SQL| MySQL
     Admin["Admin (local)"] -->|HTTP localhost:8080| phpMyAdmin
 ```
+1. **Архитектура компонентов (контейнеры и связи):**  
+   Docker‑контейнеры: Nginx (порты 80,443), Node.js (3000 internal), MySQL (3306 internal), phpMyAdmin (8080 internal). Клиент общается с Nginx по HTTPS, Nginx проксирует на Node.js, Node.js обращается к MySQL. Администратор подключается к phpMyAdmin через localhost:8080.
+
 ### 2. ER-диаграмма базы данных
 ```mermaid
-erDiagram
-    users {
-        int id PK
-        string email UK
-        string name
-        timestamp created_at
-    }
-    consents {
-        int id PK
-        int user_id FK
-        string purpose
-        string version
-        boolean is_active
-        timestamp given_at
-        timestamp revoked_at
-        string ip_address
-        text user_agent
-    }
-    event_logs {
-        int id PK
-        string user_email
-        string action
-        text details
-        string ip_address
-        text user_agent
-        timestamp created_at
-    }
-    user_data {
-        int id PK
-        int user_id FK
-        string field_name
-        text field_value
-    }
-    feedback {
-        int id PK
-        text feedback
-        timestamp created_at
-    }
-    users ||--o{ consents : has
-    users ||--o{ user_data : has
-    event_logs }o--|| users : "references by email (not FK)"
+    erDiagram
+        users {
+            int id PK
+            string email UK
+            string name
+            string password_hash
+            boolean privacy_consent_given
+            timestamp privacy_consent_date
+            enum role
+        }
+        consents {
+            int id PK
+            int user_id FK
+            string purpose
+            string version
+            boolean is_active
+            timestamp given_at
+            timestamp revoked_at
+            string ip_address
+            text user_agent
+        }
+        event_logs {
+            int id PK
+            string user_email
+            string action
+            text details
+            string ip_address
+            text user_agent
+            timestamp created_at
+        }
+        user_data {
+            int id PK
+            int user_id FK
+            string field_name
+            text field_value
+        }
+        security_incident_logs {
+            int id PK
+            datetime incident_time
+            text description
+            enum status
+            string user_email
+            string ip_address
+        }
+        users ||--o{ consents : has
+        users ||--o{ user_data : has
 ```
+2. **База данных (ER-диаграмма):**  
+   Таблицы `users`, `consents`, `event_logs`, `user_data`, `reviews`, `feedback`. Связи: `users` → `consents` (один ко многим), `users` → `user_data` (один ко многим). `event_logs` ссылается на `users.email` (не внешний ключ).
+
 ### 3. Блок-схема отзыва согласия (POST /revoke-consent)
 ```mermaid
 graph TD
@@ -253,6 +269,9 @@ graph TD
    G --> H[INSERT event_logs]
    H --> I[200 OK с подтверждением]
 ```
+3. **Блок-схема отзыва согласия:**  
+   POST /revoke-consent → валидация email → поиск пользователя → обновление `consents.is_active=0` → вставка в `event_logs` → редирект на /ER.
+
 ### 4. Многоуровневая модель разграничения доступа
 ```mermaid
 flowchart TB
@@ -276,6 +295,8 @@ flowchart TB
         phpMyAdmin_Local --> MySQL
     end
 ```
+4. **Многоуровневая модель доступа:**  
+   Публичный интернет → только Nginx (порт 80/443). Локальный доступ (администратор) → phpMyAdmin:8080. Внутренняя Docker-сеть → Node.js:3000 и MySQL:3306.
 ### 5. Docker-контейнеризация и сетевые связи
 ```mermaid
 graph LR
@@ -298,3 +319,5 @@ graph LR
     style MySQL fill:#8e8
     style phpMyAdmin fill:#8ee
 ```
+5. **Docker-контейнеризация:**  
+   Все сервисы описаны в `docker-compose.yaml` с томами и сетями. Проброс портов только для Nginx (80,443) и phpMyAdmin (8080 на 127.0.0.1).

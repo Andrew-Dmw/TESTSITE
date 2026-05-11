@@ -1,4 +1,7 @@
-
+<!--- Для проверки состояния EJS 
+<pre>showCookieBanner: <%= showCookieBanner %></pre>
+<pre>user: <%= JSON.stringify(user) %></pre> 
+--->
     <header>
     <p>
         <span class="W">ЭТО</span>
@@ -22,6 +25,9 @@
         <p>
           <a href="/main">Главная</a>
           <a href="/ER">Модель</a>
+          <% if (user && user.role === 'admin') { %>
+            <a href="/admin/incidents">Администрирование (инциденты)</a>
+          <% } %>
         </p>
       </nav>
     <main>
