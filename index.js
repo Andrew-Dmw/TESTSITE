@@ -13,6 +13,19 @@ const helmet = require('helmet');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const cookieParser = require('cookie-parser');
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT),
+    secure: false, // для порта 587
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+});
+
+
 
 const pepper = config.pepper;
 if (!pepper) {
@@ -96,6 +109,15 @@ app.use(session({
 
 app.use(helmet());
 
+async function notifyDataLeak(email, ip, reason) {
+    console.log(`\n🚨 [УТЕЧКА ПДн] Обнаружена подозрительная активность:
+        👤 Пользователь: ${email}
+        🌐 IP-адрес: ${ip}
+        📝 Причина: ${reason}
+        ⏰ Время: ${new Date().toISOString()}
+    `);
+}
+
 // Rate limiting
 const maxRequests = process.env.NODE_ENV === 'test' ? 10000 : (process.env.RATE_LIMIT_MAX ? parseInt(process.env.RATE_LIMIT_MAX) : 100);
 const limiter = rateLimit({
@@ -128,6 +150,13 @@ function isAuthenticated(req, res, next) {
     }
 }
 
+function isAdmin(req, res, next) {
+    if (req.session.userId && req.session.userRole === 'admin') {
+        return next();
+    }
+    res.status(403).send('Доступ запрещён');
+}
+
 // Получение IP
 const getClientIp = (req) => {
     return req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -149,7 +178,11 @@ app.get('/main', isAuthenticated, (req, res) => {
     res.render('main', {
         title: 'Главная',
         csrfToken: res.locals.csrfToken,
-        user: { name: req.session.userName, email: req.session.userEmail },
+        user: {
+            name: req.session.userName,
+            email: req.session.userEmail,
+            role: req.session.userRole 
+        },
         showCookieBanner: showCookieBanner
     });
 });
@@ -158,7 +191,13 @@ app.get('/ER', isAuthenticated, (req, res) => {
     res.render('ER', {
         title: "Формально-юридическая модель",
         layout: false,
-        user: req.session.userId ? { email: req.session.userEmail, name: req.session.userName } : null
+        user: 
+        req.session.userId ? 
+        {
+            email: req.session.userEmail,
+            name: req.session.userName,
+            role: req.session.userRole
+        } : null
     });
 });
 
@@ -170,9 +209,30 @@ app.get('/profile', isAuthenticated, (req, res) => {
         user: {
             id: req.session.userId,
             name: req.session.userName,
-            email: req.session.userEmail
+            email: req.session.userEmail,
+            role: req.session.userRole 
         }
     });
+});
+
+app.get('/admin/incidents', isAuthenticated, isAdmin, async (req, res) => {
+    let connection;
+    try {
+        connection = await mysql.createConnection(dbConfig);
+        const [incidents] = await connection.execute(
+            'SELECT * FROM security_incident_logs ORDER BY detection_time DESC'
+        );
+        await connection.end();
+        res.render('admin_incidents', {
+            title: 'Журнал инцидентов безопасности',
+            layout: false,
+            incidents,
+            csrfToken: res.locals.csrfToken
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Ошибка загрузки инцидентов');
+    }
 });
 
 app.post('/log-cookie-consent', limiter, express.json(), isAuthenticated, async (req, res) => {
@@ -276,9 +336,30 @@ app.get('/export-data', limiter, isAuthenticated, async (req, res) => {
     if (!email || !validator.isEmail(email)) {
         return res.status(400).send('Некорректный email в сессии');
     }
+
     let connection;
     try {
         connection = await mysql.createConnection(dbConfig);
+        const ip = getClientIp(req);
+
+        // Проверка на подозрительную активность (частые экспорты)
+        const [rows] = await connection.execute(
+            `SELECT COUNT(*) as cnt FROM event_logs 
+             WHERE action = 'data_exported' AND ip_address = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE)`,
+            [ip]
+        );
+        if (rows[0].cnt >= 3) {
+            // Запись инцидента в таблицу security_incident_logs
+            await connection.execute(
+                `INSERT INTO security_incident_logs (incident_time, description, status, user_email, ip_address)
+                 VALUES (NOW(), ?, 'detected', ?, ?)`,
+                [`Частые экспорты данных (${rows[0].cnt} за минуту) с IP ${ip}`, email, ip]
+            );
+            // Логируем в консоль
+            await notifyDataLeak(email, ip, `С IP ${ip} выполнено ${rows[0].cnt} экспортов за 1 минуту`);
+        }
+
+        // Основная логика экспорта
         const [users] = await connection.execute('SELECT id, name, email, created_at FROM users WHERE email = ?', [email]);
         if (users.length === 0) {
             await connection.end();
@@ -297,13 +378,14 @@ app.get('/export-data', limiter, isAuthenticated, async (req, res) => {
             export_date: new Date().toISOString(),
             legal_notice: 'Данные предоставлены в соответствии со ст. 14 ФЗ-152 "О персональных данных"'
         };
-        const ip = getClientIp(req) || '';
+        const ipLog = ip || '';
         const ua = req.headers['user-agent'] || '';
         await connection.execute(
             'INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
-            [email, 'data_exported', 'Скачана копия ПДн', ip, ua]
+            [email, 'data_exported', 'Скачана копия ПДн', ipLog, ua]
         );
         await connection.end();
+
         res.setHeader('Content-disposition', `attachment; filename=personal_data_${email}.json`);
         res.setHeader('Content-type', 'application/json');
         res.send(JSON.stringify(exportData, null, 2));
@@ -353,7 +435,6 @@ app.post('/register', limiter, express.json(), async (req, res) => {
     let connection;
     try {
         connection = await mysql.createConnection(dbConfig);
-        // Проверка, не занят ли email
         const [existing] = await connection.execute('SELECT id FROM users WHERE email = ?', [email]);
         if (existing.length > 0) {
             await connection.end();
@@ -364,19 +445,18 @@ app.post('/register', limiter, express.json(), async (req, res) => {
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(pepperedPassword, saltRounds);
 
-        // Вставка нового пользователя
         const [result] = await connection.execute(
             'INSERT INTO users (email, name, password_hash, privacy_consent_given, privacy_consent_date) VALUES (?, ?, ?, ?, NOW())',
             [email, name.trim(), passwordHash, true]
         );
         const userId = result.insertId;
 
-        // Вставка записи о согласии
         await connection.execute(
             'INSERT INTO consents (user_id, purpose, version, is_active, given_at, ip_address, user_agent) VALUES (?, ?, ?, ?, NOW(), ?, ?)',
             [userId, 'privacy_policy', 'v1.0', true, getClientIp(req), req.headers['user-agent'] || '']
         );
 
+        req.session.userRole = 'user';
         req.session.userId = userId;
         req.session.userEmail = email;
         req.session.userName = name.trim();
@@ -398,8 +478,9 @@ app.post('/login', limiter, express.json(), async (req, res) => {
     let connection;
     try {
         connection = await mysql.createConnection(dbConfig);
+        // ----- ИСПРАВЛЕНО: добавлено поле role в SELECT -----
         const [users] = await connection.execute(
-            'SELECT id, email, name, password_hash FROM users WHERE email = ?',
+            'SELECT id, email, name, password_hash, role FROM users WHERE email = ?',
             [email]
         );
         if (users.length === 0) {
@@ -413,6 +494,8 @@ app.post('/login', limiter, express.json(), async (req, res) => {
             await connection.end();
             return res.status(401).json({ error: 'Неверный email или пароль' });
         }
+
+        req.session.userRole = user.role;
         req.session.userId = user.id;
         req.session.userEmail = user.email;
         req.session.userName = user.name;
@@ -423,16 +506,6 @@ app.post('/login', limiter, express.json(), async (req, res) => {
         console.error(error);
         return res.status(500).json({ error: 'Ошибка сервера' });
     }
-});
-
-app.post('/logout', (req, res) => {
-    req.session.destroy(err => {
-        if (err) {
-            return res.status(500).json({ error: 'Не удалось выйти' });
-        }
-        res.clearCookie('connect.sid');
-        res.json({ message: 'Вы вышли из системы' });
-    });
 });
 
 app.get('/thank-you', (req, res) => {

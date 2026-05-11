@@ -3,6 +3,18 @@ SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 USE my_diploma_db; -- или my_diploma_test_db для тестов
 
+-- Таблица журнала инцидентов безопасности (ст. 18.1 152-ФЗ)
+CREATE TABLE IF NOT EXISTS security_incident_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    incident_time DATETIME NOT NULL,
+    detection_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    description TEXT,
+    status ENUM('detected', 'investigating', 'resolved') DEFAULT 'detected',
+    notified_at DATETIME NULL,
+    user_email VARCHAR(255),
+    ip_address VARCHAR(45)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Таблица отзывов
 CREATE TABLE IF NOT EXISTS reviews (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -13,7 +25,7 @@ CREATE TABLE IF NOT EXISTS reviews (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Таблица пользователей (добавлены поля для авторизации и согласия)
+-- Таблица пользователей (добавлены поля для авторизации и согласия, и роль)
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -21,6 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL DEFAULT '',
     privacy_consent_given BOOLEAN DEFAULT FALSE,
     privacy_consent_date TIMESTAMP NULL,
+    role ENUM('user', 'admin') DEFAULT 'user' NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -65,14 +78,25 @@ CREATE TABLE IF NOT EXISTS feedback (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Демо-пользователь (пароль: demo123!)
-INSERT INTO users (email, name, password_hash, privacy_consent_given, privacy_consent_date) 
-VALUES ('demo@example.com', 'Демо Пользователь', '$2b$10$o5xT.Tn6hXIuOg2VFXmcOOUeaQnU30afrJ/rDHYeBCLHN4.eOEUS2', TRUE, NOW())
-ON DUPLICATE KEY UPDATE name = VALUES(name), password_hash = VALUES(password_hash);
+-- =====================================================
+-- Демо-администратор (пароль: demo123!)
+-- =====================================================
+INSERT INTO users (email, name, password_hash, privacy_consent_given, privacy_consent_date, role) 
+VALUES (
+    'demo@example.com', 
+    'Демо Администратор', 
+    '$2b$10$o5xT.Tn6hXIuOg2VFXmcOOUeaQnU30afrJ/rDHYeBCLHN4.eOEUS2',  -- хеш для demo123! + pepper (ваш pepper должен совпадать)
+    TRUE, 
+    NOW(),
+    'admin'
+) ON DUPLICATE KEY UPDATE 
+    name = VALUES(name), 
+    password_hash = VALUES(password_hash),
+    role = 'admin';
 
--- Добавляем согласие
+-- Добавляем согласие на обработку (если используете таблицу consents)
 INSERT INTO consents (user_id, purpose, version, is_active, given_at, ip_address, user_agent)
-SELECT id, 'регистрация', 'v1.0', TRUE, NOW(), '127.0.0.1', 'demo'
+SELECT id, 'регистрация', 'v1.0', TRUE, NOW(), '127.0.0.1', 'demo-init'
 FROM users WHERE email = 'demo@example.com'
 ON DUPLICATE KEY UPDATE purpose = VALUES(purpose);
 
