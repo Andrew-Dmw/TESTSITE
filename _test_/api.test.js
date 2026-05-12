@@ -1,75 +1,84 @@
 const request = require('supertest');
 const app = require('../index');
 
+// Вспомогательная функция: логин и получение агента с сессией
+async function loginAndGetAgent(email, password) {
+    const agent = request.agent(app);
+    const res = await agent
+        .post('/login')
+        .send({ email, password })
+        .expect(302); // редирект на /main после успешного входа
+    return agent;
+}
+
 describe('Формально-юридическая модель - API тесты', () => {
-    // 1. Тест отзыва согласия
+    // Демо-пользователь (должен существовать в тестовой БД)
+    const testUser = {
+        email: 'demo@example.com',
+        password: 'demo123!'
+    };
+
+    // 1. Тест отзыва согласия (требует авторизации)
     describe('POST /revoke-consent', () => {
-        it('должен вернуть 400, если email не указан', async () => {
-            const res = await request(app)
+        it('должен вернуть 401, если не авторизован', async () => {
+            await request(app)
                 .post('/revoke-consent')
                 .send({})
-                .expect(400);
-            expect(res.text).toContain('Некорректный email');
+                .expect(401);
         });
-        
-        it('должен вернуть 404 для несуществующего email', async () => {
-            const res = await request(app)
+
+        it('должен успешно отозвать согласие для авторизованного пользователя', async () => {
+            const agent = await loginAndGetAgent(testUser.email, testUser.password);
+            const res = await agent
                 .post('/revoke-consent')
-                .send({ email: 'nonexistent@example.com' })
-                .expect(404);
-            expect(res.text).toContain('не найден');
-        });
-        
-        // Для реального теста нужен подготовленный пользователь в тестовой БД
-        it('должен успешно отозвать согласие для существующего email', async () => {
-            const res = await request(app)
-                .post('/revoke-consent')
-                .send({ email: 'demo@example.com' })
-                .expect(200);
-            expect(res.text).toContain('Согласие отозвано');
+                .send({}) // email не передаётся, берётся из сессии
+                .expect(302); // редирект на /ER
+            expect(res.headers.location).toBe('/ER');
         });
     });
 
-    // 2. Тест удаления данных
+    // 2. Тест удаления данных (требует авторизации)
     describe('POST /delete-data', () => {
-        it('должен вернуть 400 без email', async () => {
-            await request(app).post('/delete-data').send({}).expect(400);
+        it('должен вернуть 401 без авторизации', async () => {
+            await request(app).post('/delete-data').send({}).expect(401);
         });
-        
-        it('должен удалить данные demo@example.com', async () => {
-            const res = await request(app)
+
+        it('должен удалить данные авторизованного пользователя', async () => {
+            const agent = await loginAndGetAgent(testUser.email, testUser.password);
+            const res = await agent
                 .post('/delete-data')
-                .send({ email: 'demo@example.com' })
-                .expect(200);
-            expect(res.text).toContain('Данные удалены');
+                .send({}) // email из сессии
+                .expect(302);
+            expect(res.headers.location).toBe('/ER');
         });
     });
 
     // 3. Тест экспорта данных
     describe('GET /export-data', () => {
-        it('должен вернуть 400 без email', async () => {
-            await request(app).get('/export-data').expect(400);
+        it('должен вернуть 401 без авторизации', async () => {
+            await request(app).get('/export-data').expect(401);
         });
-        
-        it('должен вернуть JSON для demo@example.com', async () => {
-            const res = await request(app)
+
+        it('должен вернуть JSON для авторизованного пользователя', async () => {
+            const agent = await loginAndGetAgent(testUser.email, testUser.password);
+            const res = await agent
                 .get('/export-data')
-                .query({ email: 'demo@example.com' })
                 .expect(200)
                 .expect('Content-Type', /json/);
-            expect(res.body.user.email).toBe('demo@example.com');
+            expect(res.body.user.email).toBe(testUser.email);
             expect(res.body.legal_notice).toContain('ст. 14 ФЗ-152');
         });
     });
 });
+
 describe('POST /submit-feedback', () => {
-  it('должен вернуть 400, если feedback отсутствует', async () => {
-    const res = await request(app).post('/submit-feedback').send({}).expect(400);
-    expect(res.body.error).toBe('No feedback provided');
-  });
-  it('должен сохранить фидбек', async () => {
-    const res = await request(app).post('/submit-feedback').send({ feedback: 'Тест' }).expect(200);
-    expect(res.body.message).toBe('Feedback saved');
-    expect(res.body.id).toBeDefined();
-  });
+    it('должен вернуть 400, если feedback отсутствует', async () => {
+        const res = await request(app).post('/submit-feedback').send({}).expect(400);
+        expect(res.body.error).toBe('No feedback provided');
+    });
+    it('должен сохранить фидбек', async () => {
+        const res = await request(app).post('/submit-feedback').send({ feedback: 'Тест' }).expect(200);
+        expect(res.body.message).toBe('Feedback saved');
+        expect(res.body.id).toBeDefined();
+    });
 });
