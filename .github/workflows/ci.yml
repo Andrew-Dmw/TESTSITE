@@ -28,7 +28,7 @@ jobs:
           node-version: 20
       - name: Init DB
         run: |
-          mysql -h 127.0.0.1 -u root -proot -e "SHOW DATABASES;"
+          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS my_diploma_test_db;"
           mysql -h 127.0.0.1 -u root -proot my_diploma_test_db < db/init.sql
           mysql -h 127.0.0.1 -u root -proot my_diploma_test_db -e "SHOW TABLES;"
       - run: npm ci

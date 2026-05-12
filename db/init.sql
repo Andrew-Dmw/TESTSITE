@@ -1,7 +1,6 @@
 -- Определение кодировки
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
-USE my_diploma_db; -- или my_diploma_test_db для тестов
 
 -- Таблица журнала инцидентов безопасности (ст. 18.1 152-ФЗ)
 CREATE TABLE IF NOT EXISTS security_incident_logs (
