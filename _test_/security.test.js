@@ -1,5 +1,8 @@
 const request = require('supertest');
+const mysql = require('mysql2/promise');
+const bcrypt = require('bcrypt');
 const app = require('../index');
+const config = require('../config');
 
 async function loginAndGetAgent(email, password) {
     const agent = request.agent(app);
