@@ -1,3 +1,6 @@
+const request = require('supertest');
+const app = require('../index');
+
 describe('Защита и безопасность', () => {
     // CSRF-тест временно пропускаем (он требует получения токена)
     it.skip('CSRF-токен обязателен для POST-запросов (кроме GET)', async () => {

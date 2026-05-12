@@ -273,6 +273,10 @@ app.post('/revoke-consent', limiter, isAuthenticated, async (req, res) => {
     if (!email || !validator.isEmail(email)) {
         return res.status(400).send('Некорректный email в сессии');
     }
+    if (req.body.honeypot) {
+        console.log("Бот обнаружен!");
+        return res.status(400).json({ error: "Bot detected" });
+    }
     let connection;
     try {
         connection = await mysql.createConnection(dbConfig);
@@ -306,6 +310,10 @@ app.post('/delete-data', limiter, isAuthenticated, async (req, res) => {
     if (!email || !validator.isEmail(email)) {
         return res.status(400).send('Некорректный email в сессии');
     }
+    if (req.body.honeypot) {
+        console.log("Бот обнаружен!");
+        return res.status(400).json({ error: "Bot detected" });
+    }
     let connection;
     try {
         connection = await mysql.createConnection(dbConfig);
@@ -336,7 +344,10 @@ app.get('/export-data', limiter, isAuthenticated, async (req, res) => {
     if (!email || !validator.isEmail(email)) {
         return res.status(400).send('Некорректный email в сессии');
     }
-
+    if (req.body.honeypot) {
+        console.log("Бот обнаружен!");
+        return res.status(400).json({ error: "Bot detected" });
+    }
     let connection;
     try {
         connection = await mysql.createConnection(dbConfig);
@@ -401,6 +412,10 @@ app.post('/submit-feedback', limiter, express.json(), isAuthenticated, async (re
     if (!feedback || typeof feedback !== 'string' || feedback.trim() === '') {
         return res.status(400).json({ error: "No feedback provided" });
     }
+    if (req.body.honeypot) {
+        console.log("Бот обнаружен!");
+        return res.status(400).json({ error: "Bot detected" });
+    }
     try {
         const connection = await mysql.createConnection(dbConfig);
         const [result] = await connection.execute('INSERT INTO feedback (feedback) VALUES (?)', [feedback.trim()]);
@@ -427,6 +442,10 @@ app.post('/register', limiter, express.json(), async (req, res) => {
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
     if (!passwordRegex.test(password)) {
         return res.status(400).json({ error: 'Пароль должен содержать хотя бы одну букву, одну цифру и один спецсимвол' });
+    }
+    if (req.body.honeypot) {
+        console.log("Бот обнаружен!");
+        return res.status(400).json({ error: "Bot detected" });
     }
     if (!privacyConsent) {
         return res.status(400).json({ error: 'Необходимо согласие с политикой конфиденциальности' });
@@ -474,6 +493,10 @@ app.post('/login', limiter, express.json(), async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
         return res.status(400).json({ error: 'Email и пароль обязательны' });
+    }
+    if (req.body.honeypot) {
+        console.log("Бот обнаружен!");
+        return res.status(400).json({ error: "Bot detected" });
     }
     let connection;
     try {

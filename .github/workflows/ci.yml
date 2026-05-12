@@ -40,3 +40,4 @@ jobs:
           DB_PASSWORD: root
           DB_DATABASE: my_diploma_test_db
           RATE_LIMIT_MAX: 5
+          PASSWORD_PEPPER: your_super_secret_pepper_string_change_me
