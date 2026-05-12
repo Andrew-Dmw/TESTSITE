@@ -57,8 +57,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 app.use(expressLayouts);
-app.set('layout', 'layout');
-app.set('trust proxy', 1);
+app.set('layout', 'layout')
 
 // Helmet CSP
 app.use(
@@ -76,28 +75,7 @@ app.use(
     },
   })
 );
-
-// Общий лимит для всех запросов (стандартный)
-const defaultLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    message: "Слишком много запросов. Попробуйте позже."
-});
-
-// Лимит для логина (5 попыток в минуту)
-const loginLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 5,
-    message: "Слишком много попыток входа. Попробуйте позже.",
-    skipSuccessfulRequests: true
-});
-
-// Лимит для экспорта (10 запросов в час)
-const exportLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 10,
-    message: "Превышен лимит экспорта данных. Попробуйте через час."
-});
+app.set('trust proxy', 1);
 
 // Database config
 const dbConfig = {
@@ -141,10 +119,10 @@ async function notifyDataLeak(email, ip, reason) {
 }
 
 // Rate limiting
-
+const maxRequests = process.env.NODE_ENV === 'test' ? 10000 : (process.env.RATE_LIMIT_MAX ? parseInt(process.env.RATE_LIMIT_MAX) : 100);
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5,
+    max: maxRequests,
     message: "Слишком много запросов..."
 });
 
@@ -295,10 +273,6 @@ app.post('/revoke-consent', limiter, isAuthenticated, async (req, res) => {
     if (!email || !validator.isEmail(email)) {
         return res.status(400).send('Некорректный email в сессии');
     }
-    if (req.body.honeypot) {
-        console.log("Бот обнаружен!");
-        return res.status(400).json({ error: "Bot detected" });
-    }
     let connection;
     try {
         connection = await mysql.createConnection(dbConfig);
@@ -332,10 +306,6 @@ app.post('/delete-data', limiter, isAuthenticated, async (req, res) => {
     if (!email || !validator.isEmail(email)) {
         return res.status(400).send('Некорректный email в сессии');
     }
-    if (req.body.honeypot) {
-        console.log("Бот обнаружен!");
-        return res.status(400).json({ error: "Bot detected" });
-    }
     let connection;
     try {
         connection = await mysql.createConnection(dbConfig);
@@ -361,15 +331,12 @@ app.post('/delete-data', limiter, isAuthenticated, async (req, res) => {
     }
 });
 
-app.get('/export-data', exportLimiter, isAuthenticated, async (req, res) => {
+app.get('/export-data', limiter, isAuthenticated, async (req, res) => {
     const email = req.session.userEmail;
     if (!email || !validator.isEmail(email)) {
         return res.status(400).send('Некорректный email в сессии');
     }
-    if (req.body.honeypot) {
-        console.log("Бот обнаружен!");
-        return res.status(400).json({ error: "Bot detected" });
-    }
+
     let connection;
     try {
         connection = await mysql.createConnection(dbConfig);
@@ -423,7 +390,7 @@ app.get('/export-data', exportLimiter, isAuthenticated, async (req, res) => {
         res.setHeader('Content-type', 'application/json');
         res.send(JSON.stringify(exportData, null, 2));
     } catch (error) {
-        console.error('Export error details:', error.stack);
+        console.error(error);
         if (connection) await connection.end();
         res.status(500).redirect('/Server-error');
     }
@@ -433,10 +400,6 @@ app.post('/submit-feedback', limiter, express.json(), isAuthenticated, async (re
     const { feedback } = req.body;
     if (!feedback || typeof feedback !== 'string' || feedback.trim() === '') {
         return res.status(400).json({ error: "No feedback provided" });
-    }
-    if (req.body.honeypot) {
-        console.log("Бот обнаружен!");
-        return res.status(400).json({ error: "Bot detected" });
     }
     try {
         const connection = await mysql.createConnection(dbConfig);
@@ -464,10 +427,6 @@ app.post('/register', limiter, express.json(), async (req, res) => {
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
     if (!passwordRegex.test(password)) {
         return res.status(400).json({ error: 'Пароль должен содержать хотя бы одну букву, одну цифру и один спецсимвол' });
-    }
-    if (req.body.honeypot) {
-        console.log("Бот обнаружен!");
-        return res.status(400).json({ error: "Bot detected" });
     }
     if (!privacyConsent) {
         return res.status(400).json({ error: 'Необходимо согласие с политикой конфиденциальности' });
@@ -511,14 +470,10 @@ app.post('/register', limiter, express.json(), async (req, res) => {
     }
 });
 
-app.post('/login', loginLimiter, express.json(), async (req, res) => {
+app.post('/login', limiter, express.json(), async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
         return res.status(400).json({ error: 'Email и пароль обязательны' });
-    }
-    if (req.body.honeypot) {
-        console.log("Бот обнаружен!");
-        return res.status(400).json({ error: "Bot detected" });
     }
     let connection;
     try {
@@ -552,8 +507,6 @@ app.post('/login', loginLimiter, express.json(), async (req, res) => {
         return res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
-
-app.use(defaultLimiter)
 
 app.get('/thank-you', (req, res) => {
     res.render('thank-you', { title: 'Спасибо за ваш отзыв!', redirectUrl: '/main', layout: false, });
