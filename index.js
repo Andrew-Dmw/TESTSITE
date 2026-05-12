@@ -76,7 +76,28 @@ app.use(
     },
   })
 );
-app.set('trust proxy', true);
+
+// Общий лимит для всех запросов (стандартный)
+const defaultLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: "Слишком много запросов. Попробуйте позже."
+});
+
+// Лимит для логина (5 попыток в минуту)
+const loginLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    message: "Слишком много попыток входа. Попробуйте позже.",
+    skipSuccessfulRequests: true
+});
+
+// Лимит для экспорта (10 запросов в час)
+const exportLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 10,
+    message: "Превышен лимит экспорта данных. Попробуйте через час."
+});
 
 // Database config
 const dbConfig = {
@@ -120,10 +141,10 @@ async function notifyDataLeak(email, ip, reason) {
 }
 
 // Rate limiting
-const maxRequests = process.env.NODE_ENV === 'test' ? 10000 : (process.env.RATE_LIMIT_MAX ? parseInt(process.env.RATE_LIMIT_MAX) : 100);
+
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: maxRequests,
+    max: 5,
     message: "Слишком много запросов..."
 });
 
@@ -340,7 +361,7 @@ app.post('/delete-data', limiter, isAuthenticated, async (req, res) => {
     }
 });
 
-app.get('/export-data', limiter, isAuthenticated, async (req, res) => {
+app.get('/export-data', exportLimiter, isAuthenticated, async (req, res) => {
     const email = req.session.userEmail;
     if (!email || !validator.isEmail(email)) {
         return res.status(400).send('Некорректный email в сессии');
@@ -490,7 +511,7 @@ app.post('/register', limiter, express.json(), async (req, res) => {
     }
 });
 
-app.post('/login', limiter, express.json(), async (req, res) => {
+app.post('/login', loginLimiter, express.json(), async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
         return res.status(400).json({ error: 'Email и пароль обязательны' });
@@ -531,6 +552,8 @@ app.post('/login', limiter, express.json(), async (req, res) => {
         return res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
+
+app.use(defaultLimiter)
 
 app.get('/thank-you', (req, res) => {
     res.render('thank-you', { title: 'Спасибо за ваш отзыв!', redirectUrl: '/main', layout: false, });
