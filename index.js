@@ -401,7 +401,7 @@ app.get('/export-data', limiter, isAuthenticated, async (req, res) => {
         res.setHeader('Content-type', 'application/json');
         res.send(JSON.stringify(exportData, null, 2));
     } catch (error) {
-        console.error(error);
+        console.error('Export error details:', error.stack);
         if (connection) await connection.end();
         res.status(500).redirect('/Server-error');
     }
