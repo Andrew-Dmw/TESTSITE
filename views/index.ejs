@@ -133,6 +133,7 @@
     </div>
     <div id="login-tab" class="tab-content active">
         <form id="login-form" method="post" action="/login">
+            <input type="text" name="honeypot" style="display: none;" tabindex="-1" autocomplete="off">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <input type="email" name="email" placeholder="Email" required>
             <input type="password" name="password" placeholder="Пароль" required>
@@ -142,6 +143,7 @@
     <div id="register-tab" class="tab-content" style="display:none;">
         <form id="register-form" method="post" action="/register">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="text" name="honeypot" style="display: none;" tabindex="-1" autocomplete="off">
             <input type="email" name="email" placeholder="Email" required>
             <input type="text" name="name" placeholder="Имя" required>
             <input type="password" name="password" placeholder="Пароль" required>
