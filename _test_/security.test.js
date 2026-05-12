@@ -8,7 +8,7 @@ async function loginAndGetAgent(email, password) {
 }
 
 describe('Защита и безопасность', () => {
-    it.skip('Honeypot должен блокировать ботов', async () => {
+    it('Honeypot должен блокировать ботов', async () => {
         const res = await request(app)
             .post('/save-data')
             .type('form')
