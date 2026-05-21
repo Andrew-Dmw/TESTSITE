@@ -64,7 +64,7 @@ app.use(
   helmet.contentSecurityPolicy({
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://yastatic.net"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://yastatic.net", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https://yastatic.net"],
@@ -347,10 +347,6 @@ app.get('/export-data', limiter, isAuthenticated, async (req, res) => {
     const email = req.session.userEmail;
     if (!email || !validator.isEmail(email)) {
         return res.status(400).send('Некорректный email в сессии');
-    }
-    if (req.body.honeypot) {
-        console.log("Бот обнаружен!");
-        return res.status(400).json({ error: "Bot detected" });
     }
 
     let connection;
