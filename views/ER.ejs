@@ -394,7 +394,7 @@
             <form action="/revoke-consent" method="post">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <input type="text" name="honeypot" style="display: none;" tabindex="-1" autocomplete="off">
-                <button type="submit">Отозвать моё согласие</button>
+                <button  type="submit">Отозвать моё согласие</button>
             </form>
             <p class="small">Согласно ст. 9 ФЗ-152, после отзыва оператор обязан удалить ваши данные в течение 30 дней.</p>
 
@@ -409,7 +409,7 @@
             <form action="/export-data" method="get">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <input type="text" name="honeypot" style="display: none;" tabindex="-1" autocomplete="off">
-                <button type="submit">Скачать JSON</button>
+                <button id="submitButton" type="submit">Скачать JSON</button>
             </form>
 
             <h3>Взаимодействие субъектов при утечке данных</h3>
