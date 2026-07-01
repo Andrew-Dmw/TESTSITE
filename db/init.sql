@@ -1,14 +1,8 @@
--- ============================================================
 -- Кодировка
--- ============================================================
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 
--- ============================================================
--- Таблицы
--- ============================================================
-
--- Журнал инцидентов безопасности (ст. 18.1 152-ФЗ)
+-- Таблица инцидентов безопасности
 CREATE TABLE IF NOT EXISTS security_incident_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     incident_time DATETIME NOT NULL,
@@ -20,7 +14,7 @@ CREATE TABLE IF NOT EXISTS security_incident_logs (
     ip_address VARCHAR(45)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Отзывы пользователей
+-- Таблица отзывов
 CREATE TABLE IF NOT EXISTS reviews (
     id INT AUTO_INCREMENT PRIMARY KEY,
     date_time DATETIME NOT NULL,
@@ -42,7 +36,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Согласия на обработку ПДн
+-- Согласия
 CREATE TABLE IF NOT EXISTS consents (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -54,7 +48,6 @@ CREATE TABLE IF NOT EXISTS consents (
     ip_address VARCHAR(45),
     user_agent TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    -- Добавлен уникальный индекс, чтобы ON DUPLICATE KEY работал
     UNIQUE KEY unique_user_purpose (user_id, purpose)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -69,14 +62,13 @@ CREATE TABLE IF NOT EXISTS event_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Пользовательские данные (для экспорта)
+-- Пользовательские данные
 CREATE TABLE IF NOT EXISTS user_data (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     field_name VARCHAR(100),
     field_value TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    -- Уникальный индекс, чтобы ON DUPLICATE KEY работал
     UNIQUE KEY unique_user_field (user_id, field_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -86,38 +78,3 @@ CREATE TABLE IF NOT EXISTS feedback (
     feedback TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============================================================
--- Демо-администратор
--- Пароль: demo123!
--- Хеш сгенерирован с pepper = 'your_super_secret_pepper_string_change_me'
--- Если ваш pepper отличается, пересоздайте хеш через bcrypt.hash('demo123!' + pepper, 10)
--- и подставьте ниже.
--- ============================================================
-INSERT INTO users (email, name, password_hash, privacy_consent_given, privacy_consent_date, role) 
-VALUES (
-    'demo@example.com', 
-    'Демо Администратор', 
-    '$2b$10$o5xT.Tn6hXIuOg2VFXmcOOUeaQnU30afrJ/rDHYeBCLHN4.eOEUS2',  -- !!! замените на свой хеш
-    TRUE, 
-    NOW(),
-    'admin'
-) ON DUPLICATE KEY UPDATE 
-    name = VALUES(name), 
-    password_hash = VALUES(password_hash),
-    -- роль оставляем без изменений, если пользователь уже существует
-    role = CASE WHEN id IS NOT NULL THEN role ELSE 'admin' END;  -- так не получится в MySQL, проще вообще не обновлять role:
--- Альтернативно: role = role (не менять)
--- В текущей версии роль будет перезаписана на 'admin', если пользователь существует. Это допустимо.
-
--- Согласие демо-пользователя (теперь сработает ON DUPLICATE KEY)
-INSERT INTO consents (user_id, purpose, version, is_active, given_at, ip_address, user_agent)
-SELECT id, 'регистрация', 'v1.0', TRUE, NOW(), '127.0.0.1', 'demo-init'
-FROM users WHERE email = 'demo@example.com'
-ON DUPLICATE KEY UPDATE version = VALUES(version), is_active = VALUES(is_active);
-
--- Демо-данные (телефон) — теперь тоже не дублируются
-INSERT INTO user_data (user_id, field_name, field_value)
-SELECT id, 'phone', '+7 999 123-45-67'
-FROM users WHERE email = 'demo@example.com'
-ON DUPLICATE KEY UPDATE field_value = VALUES(field_value);

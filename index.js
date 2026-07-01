@@ -176,9 +176,9 @@ async function notifyDataLeak(email, ip, reason) {
 // Rate limiting (ограничение количества запросов)
 // В тестовой среде лимит выше, чтобы не мешать тестам
 // ================================================================
-const maxRequests = process.env.NODE_ENV === 'test'
-    ? 10000
-    : (process.env.RATE_LIMIT_MAX ? parseInt(process.env.RATE_LIMIT_MAX) : 100);
+const maxRequests = process.env.RATE_LIMIT_MAX
+    ? parseInt(process.env.RATE_LIMIT_MAX)
+    : (process.env.NODE_ENV === 'test' ? 10000 : 100);
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 минут
