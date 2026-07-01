@@ -3,7 +3,7 @@ const app = require('../index');
 const { ensureDemoUser, TEST_USER } = require('./helpers');
 
 beforeAll(async () => {
-    await ensureDemoUser();
+    await ensureDemoUser();   // ← создаём пользователя
 });
 
 async function loginAndGetAgent(email, password) {
@@ -47,7 +47,6 @@ describe('Защита и безопасность', () => {
     it('Rate limiting должен блокировать частые запросы', async () => {
         const agent3 = request.agent(app);
         const promises = [];
-        // Отправляем 15 запросов к /login с одного IP (без заголовка X-Forwarded-For)
         for (let i = 0; i < 15; i++) {
             promises.push(
                 agent3
@@ -56,9 +55,7 @@ describe('Защита и безопасность', () => {
             );
         }
         const results = await Promise.allSettled(promises);
-        const tooMany = results.filter(
-            r => r.status === 'fulfilled' && r.value.status === 429
-        );
+        const tooMany = results.filter(r => r.status === 'fulfilled' && r.value.status === 429);
         expect(tooMany.length).toBeGreaterThan(0);
     });
 });
