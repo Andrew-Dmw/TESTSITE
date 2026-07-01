@@ -47,13 +47,18 @@ describe('Защита и безопасность', () => {
     it('Rate limiting должен блокировать частые запросы', async () => {
         const agent3 = request.agent(app);
         const promises = [];
+        // Отправляем 15 запросов к /login с одного IP (без заголовка X-Forwarded-For)
         for (let i = 0; i < 15; i++) {
             promises.push(
-                agent3.get('/')   // без заголовка X-Forwarded-For, IP будет 127.0.0.1
+                agent3
+                    .post('/login')
+                    .send({ email: 'no-reply@test.com', password: 'wrong' })
             );
         }
         const results = await Promise.allSettled(promises);
-        const tooMany = results.filter(r => r.status === 'fulfilled' && r.value.status === 429);
+        const tooMany = results.filter(
+            r => r.status === 'fulfilled' && r.value.status === 429
+        );
         expect(tooMany.length).toBeGreaterThan(0);
     });
 });
