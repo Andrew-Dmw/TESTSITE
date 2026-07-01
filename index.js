@@ -692,6 +692,7 @@ const start = () => {
         });
     } catch (e) {
         logger.error(`Server error: ${e.message}`);
+        console.error('Login error:', error);
         console.error(e);
     }
 };

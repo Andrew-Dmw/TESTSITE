@@ -46,3 +46,4 @@ jobs:
           DB_DATABASE: my_diploma_test_db
           RATE_LIMIT_MAX: 5
           PASSWORD_PEPPER: test_pepper_change_me
+          SESSION_SECRET: test_session_secret            # ← добавьте это
