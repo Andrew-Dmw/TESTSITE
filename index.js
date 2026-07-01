@@ -22,6 +22,7 @@ const nodemailer = require('nodemailer');
 // Конфигурация Nodemailer (для отправки уведомлений)
 // Использует переменные окружения SMTP_*
 // ================================================================
+
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT),
@@ -44,7 +45,8 @@ if (!pepper) {
 
 // Создаём экземпляр Express
 const app = express();
-
+// Глобальный rate limiter
+app.use(limiter);
 // ================================================================
 // Базовая настройка CORS
 // Указываем конкретный origin для безопасности, credentials – для кук
@@ -191,29 +193,18 @@ const limiter = rateLimit({
 // Не применяем глобально, только на маршруты с формами.
 // Глобально устанавливаем csrfToken для шаблонов.
 // ================================================================
-if (process.env.NODE_ENV !== 'test') {
-    const csrfProtection = csurf({ cookie: false });
+// CSRF-защита (всегда включена для нужных маршрутов)
+const csrfProtection = csurf({ cookie: false });
 
-    // Этот middleware делает доступным токен в res.locals.csrfToken для всех маршрутов
-    app.use((req, res, next) => {
-        res.locals.csrfToken = req.csrfToken();
-        next();
-    });
+app.use((req, res, next) => {
+    res.locals.csrfToken = req.csrfToken();
+    next();
+});
 
-    // Применяем csrfProtection только к тем POST-маршрутам, где есть HTML-формы
-    // (исключаем JSON-эндпоинты регистрации/входа)
-    app.use('/save-data', csrfProtection);
-    app.use('/revoke-consent', csrfProtection);
-    app.use('/delete-data', csrfProtection);
-    // app.use('/export-data', csrfProtection); // GET-запрос, не нужен
-    // Для других POST-маршрутов можно добавить при необходимости
-} else {
-    // В тестовом режиме просто заглушка
-    app.use((req, res, next) => {
-        res.locals.csrfToken = 'test-token';
-        next();
-    });
-}
+// Применяем только к формам, где нужна защита
+app.use('/save-data', csrfProtection);
+app.use('/revoke-consent', csrfProtection);
+app.use('/delete-data', csrfProtection);
 
 // ================================================================
 // Middleware для проверки авторизации и ролей
