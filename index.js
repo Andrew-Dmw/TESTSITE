@@ -641,6 +641,7 @@ app.post('/login', limiter, async (req, res) => {
         return res.redirect('/main'); // аналогично регистрации, лучше вернуть JSON с URL
     } catch (error) {
         if (connection) connection.release();
+        console.error('Login error:', error); 
         console.error(error);
         return res.status(500).json({ error: 'Ошибка сервера' });
     }
