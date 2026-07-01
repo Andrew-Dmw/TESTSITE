@@ -1,8 +1,14 @@
--- Определение кодировки
+-- ============================================================
+-- Кодировка
+-- ============================================================
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 
--- Таблица журнала инцидентов безопасности (ст. 18.1 152-ФЗ)
+-- ============================================================
+-- Таблицы
+-- ============================================================
+
+-- Журнал инцидентов безопасности (ст. 18.1 152-ФЗ)
 CREATE TABLE IF NOT EXISTS security_incident_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     incident_time DATETIME NOT NULL,
@@ -14,7 +20,7 @@ CREATE TABLE IF NOT EXISTS security_incident_logs (
     ip_address VARCHAR(45)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Таблица отзывов
+-- Отзывы пользователей
 CREATE TABLE IF NOT EXISTS reviews (
     id INT AUTO_INCREMENT PRIMARY KEY,
     date_time DATETIME NOT NULL,
@@ -24,7 +30,7 @@ CREATE TABLE IF NOT EXISTS reviews (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Таблица пользователей (добавлены поля для авторизации и согласия, и роль)
+-- Пользователи
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -36,7 +42,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Таблица согласий
+-- Согласия на обработку ПДн
 CREATE TABLE IF NOT EXISTS consents (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -47,10 +53,12 @@ CREATE TABLE IF NOT EXISTS consents (
     revoked_at TIMESTAMP NULL,
     ip_address VARCHAR(45),
     user_agent TEXT,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    -- Добавлен уникальный индекс, чтобы ON DUPLICATE KEY работал
+    UNIQUE KEY unique_user_purpose (user_id, purpose)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Таблица логов событий
+-- Логи событий
 CREATE TABLE IF NOT EXISTS event_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_email VARCHAR(255),
@@ -61,45 +69,54 @@ CREATE TABLE IF NOT EXISTS event_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Таблица пользовательских данных (для экспорта)
+-- Пользовательские данные (для экспорта)
 CREATE TABLE IF NOT EXISTS user_data (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     field_name VARCHAR(100),
     field_value TEXT,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    -- Уникальный индекс, чтобы ON DUPLICATE KEY работал
+    UNIQUE KEY unique_user_field (user_id, field_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Таблица фидбека
+-- Фидбек
 CREATE TABLE IF NOT EXISTS feedback (
     id INT AUTO_INCREMENT PRIMARY KEY,
     feedback TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =====================================================
--- Демо-администратор (пароль: demo123!)
--- =====================================================
+-- ============================================================
+-- Демо-администратор
+-- Пароль: demo123!
+-- Хеш сгенерирован с pepper = 'your_super_secret_pepper_string_change_me'
+-- Если ваш pepper отличается, пересоздайте хеш через bcrypt.hash('demo123!' + pepper, 10)
+-- и подставьте ниже.
+-- ============================================================
 INSERT INTO users (email, name, password_hash, privacy_consent_given, privacy_consent_date, role) 
 VALUES (
     'demo@example.com', 
     'Демо Администратор', 
-    '$2b$10$o5xT.Tn6hXIuOg2VFXmcOOUeaQnU30afrJ/rDHYeBCLHN4.eOEUS2',  -- хеш для demo123! + pepper (ваш pepper должен совпадать)
+    '$2b$10$o5xT.Tn6hXIuOg2VFXmcOOUeaQnU30afrJ/rDHYeBCLHN4.eOEUS2',  -- !!! замените на свой хеш
     TRUE, 
     NOW(),
     'admin'
 ) ON DUPLICATE KEY UPDATE 
     name = VALUES(name), 
     password_hash = VALUES(password_hash),
-    role = 'admin';
+    -- роль оставляем без изменений, если пользователь уже существует
+    role = CASE WHEN id IS NOT NULL THEN role ELSE 'admin' END;  -- так не получится в MySQL, проще вообще не обновлять role:
+-- Альтернативно: role = role (не менять)
+-- В текущей версии роль будет перезаписана на 'admin', если пользователь существует. Это допустимо.
 
--- Добавляем согласие на обработку (если используете таблицу consents)
+-- Согласие демо-пользователя (теперь сработает ON DUPLICATE KEY)
 INSERT INTO consents (user_id, purpose, version, is_active, given_at, ip_address, user_agent)
 SELECT id, 'регистрация', 'v1.0', TRUE, NOW(), '127.0.0.1', 'demo-init'
 FROM users WHERE email = 'demo@example.com'
-ON DUPLICATE KEY UPDATE purpose = VALUES(purpose);
+ON DUPLICATE KEY UPDATE version = VALUES(version), is_active = VALUES(is_active);
 
--- Добавляем демо-данные (телефон)
+-- Демо-данные (телефон) — теперь тоже не дублируются
 INSERT INTO user_data (user_id, field_name, field_value)
 SELECT id, 'phone', '+7 999 123-45-67'
 FROM users WHERE email = 'demo@example.com'

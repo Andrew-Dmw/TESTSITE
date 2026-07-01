@@ -15,22 +15,27 @@ jobs:
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping"
+          --health-cmd="mysqladmin ping -u root -proot"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4   # v5 не существует
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4 # v6 не существует
         with:
           node-version: 20
+
+      - name: Install MySQL client
+        run: sudo apt-get install -y mysql-client
+
       - name: Init DB
         run: |
           mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS my_diploma_test_db;"
           mysql -h 127.0.0.1 -u root -proot my_diploma_test_db < db/init.sql
           mysql -h 127.0.0.1 -u root -proot my_diploma_test_db -e "SHOW TABLES;"
+
       - run: npm ci
       - run: npm test
         env:
@@ -40,4 +45,4 @@ jobs:
           DB_PASSWORD: root
           DB_DATABASE: my_diploma_test_db
           RATE_LIMIT_MAX: 5
-          PASSWORD_PEPPER: your_super_secret_pepper_string_change_me
+          PASSWORD_PEPPER: test_pepper_change_me

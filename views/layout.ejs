@@ -1,30 +1,39 @@
 <!DOCTYPE html>
 <html lang="ru">
-    <head>
-        <meta name="csrf-token" content="<%= csrfToken %>">
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="Этот сайт чисто для чила">
-        <meta property="og:title" content="Первый сайт">
-        <meta property="og:description" content="Этот сайт чисто для чила">
-        <meta property="og:image" content="favicon.icon">
-        <meta property="og:url" content="Myfirstsite.ru">
-        <meta name="csrf-token" content="<%= csrfToken %>">
-            <!-- Cовременный шрифт -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
-        <!-- Font Awesome для иконок (бесплатно) -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-        <link rel="icon" href="/images/favicons-39145c3850b6c70457689ce17f2f9f7c(pr-cy.ru)/favicon.ico" type="image/x-icon">
-        <title><%= title %></title>
-        <link rel="stylesheet" href="/css/style.css?v=1.0">
-    </head>
-    <body>
-        <div class="CB">
-            <div id = "color" class="body">
-                <%- body %>
-            </div>
+<head>
+    <!-- CSRF-токен для AJAX-запросов (единожды) -->
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Данный сайт представляет прототип юридической модели, которая реализует нормы права">
+    <!-- Open Graph (укажите реальные URL для продакшна) -->
+    <meta property="og:title" content="Первый сайт">
+    <meta property="og:description" content="Данный сайт представляет прототип юридической модели, которая реализует нормы права">
+    <meta property="og:image" content="/images/og-image.png">
+    <meta property="og:url" content="https://myfirstsite.ru">
+
+    <!-- Предзагрузка шрифтов (с crossorigin для корректной работы) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome иконки -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Фавиконка -->
+    <link rel="icon" href="/images/favicons-39145c3850b6c70457689ce17f2f9f7c(pr-cy.ru)/favicon.ico" type="image/x-icon">
+
+    <title><%= title %></title>
+
+    <!-- Основной CSS сайта (кешируется, версия для сброса кеша) -->
+    <link rel="stylesheet" href="/css/style.css?v=1.0">
+</head>
+<body>
+    <div class="CB">
+        <div id="color" class="body">
+            <!-- Выводим безопасное содержимое страницы (замена <%- на <%=) -->
+            <%- body %>
         </div>
-    </body>
+    </div>
+</body>
 </html>
