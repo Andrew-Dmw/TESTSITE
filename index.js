@@ -94,6 +94,7 @@ app.set('layout', 'layout');
 // Убрали 'unsafe-inline' из scriptSrc, исправили styleSrc, добавили нужные шрифты
 // ================================================================
 app.use(
+<<<<<<< HEAD
     helmet.contentSecurityPolicy({
         directives: {
             defaultSrc: ["'self'"],
@@ -107,6 +108,21 @@ app.use(
             objectSrc: ["'none'"],
         },
     })
+=======
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://yastatic.net", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https://yastatic.net"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'self'"],
+      mediaSrc: ["'self'"],
+      objectSrc: ["'none'"],
+    },
+  })
+>>>>>>> e0a77a50687f2e5b4273a99e5a6de742e7c13dbc
 );
 
 // Доверяем первому прокси (нужно для корректного IP за балансировщиком)
