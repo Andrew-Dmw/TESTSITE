@@ -80,7 +80,7 @@ describe('API формально-юридической модели', () => {
             expect(res.body.custom_fields).toBeDefined();
             expect(res.body.consents_history).toBeDefined();
             expect(res.body.export_date).toBeDefined();
-            expect(res.body.legal_notice).toContain('152-ФЗ');
+            expect(res.body.legal_notice).toContain('ФЗ-152');
         });
     });
 

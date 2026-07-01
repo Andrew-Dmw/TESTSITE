@@ -1,7 +1,6 @@
 const request = require('supertest');
 const app = require('../index');
 
-// Вспомогательная функция для логина
 async function loginAndGetAgent(email, password) {
     const agent = request.agent(app);
     await agent.post('/login').send({ email, password }).expect(302);
@@ -9,10 +8,15 @@ async function loginAndGetAgent(email, password) {
 }
 
 describe('Защита и безопасность', () => {
+    let agent;
 
-    // ---------- Honeypot ----------
+    beforeAll(async () => {
+        // Используем демо-пользователя (должен быть в тестовой БД)
+        agent = await loginAndGetAgent('demo@example.com', 'demo123!');
+    });
+
     it('Honeypot должен блокировать ботов (сообщение Invalid request)', async () => {
-        const res = await request(app)
+        const res = await agent
             .post('/save-data')
             .type('form')
             .send({
@@ -20,47 +24,34 @@ describe('Защита и безопасность', () => {
                 Like: 'cats',
                 COMMENT: 'test',
                 dateTime: '2025-07-30T14:47',
-                honeypot: 'anything'   // скрытое поле, заполненное ботом
+                honeypot: 'anything'
             })
             .expect(400);
-
-        // Проверяем, что ответ содержит общее сообщение об ошибке, а не "Бот обнаружен"
         expect(res.body.error).toBe('Invalid request');
     });
 
-    // ---------- CSRF ----------
-    it('Должен отклонить POST-запрос без CSRF-токена (если применимо)', async () => {
-        // Создаём агента, но не извлекаем токен
-        const agent = request.agent(app);
-        // Пытаемся выполнить защищённый POST без токена
-        const res = await agent
+    it('Должен отклонить POST-запрос без CSRF-токена', async () => {
+        // Создаём нового агента, логинимся, но не извлекаем csrf-токен из страницы.
+        const agent2 = request.agent(app);
+        await agent2.post('/login').send({ email: 'demo@example.com', password: 'demo123!' }).expect(302);
+        // Теперь отправляем POST без _csrf
+        const res = await agent2
             .post('/save-data')
             .type('form')
-            .send({
-                Z: 'v',
-                Like: 'tests',
-                COMMENT: 'test',
-                dateTime: '2025-07-30T14:47'
-            });
-        // Ожидаем 403 (Form tampered with) – означает, что CSRF отработал
+            .send({ Z: 'v', Like: 'tests', COMMENT: 'test', dateTime: '2025-07-30T14:47' });
         expect(res.status).toBe(403);
     });
 
-    // ---------- Rate Limiting ----------
     it('Rate limiting должен блокировать чрезмерное количество запросов', async () => {
-        const agent = request.agent(app);
-        // Делаем много быстрых запросов к конечной точке, которая не требует авторизации
+        const agent3 = request.agent(app);
         const promises = [];
-        for (let i = 0; i < 150; i++) {
+        for (let i = 0; i < 30; i++) { // уменьшено число запросов для стабильности
             promises.push(
-                agent
-                    .get('/')
-                    .set('X-Forwarded-For', `1.2.3.${i % 255}`) // имитируем разные IP, если нужно обойти лимит на IP
+                agent3.get('/').set('X-Forwarded-For', `1.2.3.${i % 255}`)
             );
         }
-        const responses = await Promise.all(promises);
-        // Хотя бы один ответ должен быть 429 (Too Many Requests)
-        const tooMany = responses.filter(r => r.status === 429);
+        const results = await Promise.allSettled(promises);
+        const tooMany = results.filter(r => r.status === 'fulfilled' && r.value.status === 429);
         expect(tooMany.length).toBeGreaterThan(0);
     });
 });
