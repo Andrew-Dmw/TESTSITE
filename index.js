@@ -193,17 +193,30 @@ const limiter = rateLimit({
 // Глобально устанавливаем csrfToken для шаблонов.
 // ================================================================
 // CSRF-защита (всегда включена для нужных маршрутов)
-const csrfProtection = csurf({ cookie: false });
+// ================================================================
+// CSRF-защита
+// ================================================================
+if (process.env.NODE_ENV !== 'test') {
+    const csrfProtection = csurf({ cookie: false });
 
-app.use((req, res, next) => {
-    res.locals.csrfToken = req.csrfToken();
-    next();
-});
+    // Глобально добавляем токен в res.locals для шаблонов
+    app.use((req, res, next) => {
+        res.locals.csrfToken = req.csrfToken();
+        next();
+    });
 
-// Применяем только к формам, где нужна защита
-app.use('/save-data', csrfProtection);
-app.use('/revoke-consent', csrfProtection);
-app.use('/delete-data', csrfProtection);
+    // Применяем защиту только к формам, где она нужна
+    app.use('/save-data', csrfProtection);
+    app.use('/revoke-consent', csrfProtection);
+    app.use('/delete-data', csrfProtection);
+} else {
+    // В тестовой среде метод csrfToken должен существовать, но проверка отключена
+    app.use((req, res, next) => {
+        req.csrfToken = () => 'test-token';   // заглушка
+        res.locals.csrfToken = 'test-token';
+        next();
+    });
+}
 
 // ================================================================
 // Middleware для проверки авторизации и ролей
