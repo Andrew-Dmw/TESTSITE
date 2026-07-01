@@ -1,7 +1,11 @@
 services:
+  # =============================================
+  # MySQL 8.0
+  # =============================================
   mysql_db:
     image: mysql:8.0
     container_name: my_diploma_db
+    restart: unless-stopped          # автоматический перезапуск
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -9,68 +13,92 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3307:3306"
+      - "3307:3306"                  # внешний порт 3307 (для клиентов вне Docker)
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # ro для безопасности
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}"   # обязательная аутентификация
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - app_network
 
+  # =============================================
+  # Node.js приложение
+  # =============================================
   node_app:
     build: .
     container_name: my_diploma_app
-    # ports:   # закомментировано, так как порт пробрасывает Nginx
-    #   - "3000:3000"
+    restart: unless-stopped
     depends_on:
       mysql_db:
         condition: service_healthy
     environment:
-      DB_HOST: ${DB_HOST}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_DATABASE: ${DB_DATABASE}
-      DB_PORT: ${DB_PORT}
+      DB_HOST: mysql_db               # имя сервиса внутри сети
+      DB_PORT: 3306                   # внутренний порт MySQL
+      DB_USER: ${MYSQL_USER}          # используем ту же учётку, что создали в MySQL
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_DATABASE: ${MYSQL_DATABASE}
       NODE_ENV: ${NODE_ENV}
-      PORT: ${PORT}
+      PORT: ${PORT:-3000}
       SESSION_SECRET: ${SESSION_SECRET}
       PASSWORD_PEPPER: ${PASSWORD_PEPPER}
+    # ports не публикуем – доступ только через Nginx
     networks:
       - app_network
 
+  # =============================================
+  # Nginx (обратный прокси + SSL)
+  # =============================================
   nginx:
     image: nginx:alpine
     container_name: my_nginx
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro     # конфиги Nginx
+      - ./nginx/ssl:/etc/nginx/ssl:ro           # сертификаты (fullchain.pem, privkey.pem)
     depends_on:
       - node_app
     networks:
       - app_network
 
+  # =============================================
+  # PhpMyAdmin (только для разработки)
+  # =============================================
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: my_phpmyadmin
+    restart: unless-stopped
     ports:
-      - "127.0.0.1:8080:80"
+      - "127.0.0.1:8080:80"           # доступ только с локальной машины
     environment:
-      PMA_HOST: ${PMA_HOST:-mysql_db}
-      PMA_PORT: ${PMA_PORT:-3306}
-      PMA_ARBITRARY: 1
+      PMA_HOST: mysql_db
+      PMA_PORT: 3306
       UPLOAD_LIMIT: 300M
+      PMA_ARBITRARY: 1                # можно удалить в production, но для dev ок
     depends_on:
       - mysql_db
     networks:
       - app_network
 
+# =============================================
+# Сеть и том
+# =============================================
 networks:
   app_network:
     driver: bridge

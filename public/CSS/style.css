@@ -1,9 +1,15 @@
-/*Основной стиль*/
+/*
+ * ОСНОВНОЙ СТИЛЬ САЙТА
+ * Содержит только общие стили: сбросы, переменные, типографику, шапку, навигацию, аккордеон, адаптив.
+ * Стили для конкретных страниц (авторизация, профиль, баннер cookie) вынесены в отдельные файлы.
+ */
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
+
 :root {
     --background-color: #f0f0f0;
     --text-color: rgb(0, 0, 0);
@@ -11,9 +17,30 @@
     --section-background: lightgray;
     --footer-background: gray;
 }
-.CB{
+
+/* Тёмная тема (при добавлении класса .bodyBlack к контейнеру) */
+.bodyBlack {
+    --background-color: rgb(0, 0, 0);
+    --text-color: rgb(255, 255, 255);
+    --section-background: rgb(0, 0, 0);
+    --footer-background: rgb(0, 0, 0);
+}
+
+/* Базовые настройки страницы */
+body {
+    font-size: 30px;
+    font-family: 'Inter', Arial, Helvetica, sans-serif;  /* добавлен Inter */
+    background: linear-gradient(135deg, #ff6969 0%, #10cfff 100%);
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed; /* чтобы фон не сжимался */
+}
+
+/* Главный контейнер (обёртка layout) */
+.CB {
     text-align: center;
 }
+
 .body {
     background-color: var(--background-color);
     color: var(--text-color);
@@ -25,46 +52,30 @@
     overflow: hidden;
     box-sizing: border-box;
 }
-.bodyBlack{
-    --background-color: rgb(0, 0, 0);
-    --text-color: rgb(255, 255, 255);
-    --section-background: rgb(0, 0, 0);
-    --footer-background: rgb(0, 0, 0);
-}
-body {
-    font-size: 30px;
-    font-family: Arial, Helvetica, sans-serif;
-    background: linear-gradient(135deg, #ff6969 0%, #10cfff 100%);
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center;
-}
+
+/* Таблицы */
 table, th, td {
     border: 2px solid black;
 }
 table {
     border-collapse: collapse;
-    font-family: Arial;
+    font-family: Arial, sans-serif;
 }
 th, td {
-    border: 2px solid rgb(0, 0, 0);
-    padding: 10px; font-family: Arial;
+    padding: 10px;
 }
-header{
-    bottom: none;
-    background-image: url('B.jpg');
+
+/* Шапка */
+header {
+    background-image: url('/images/B.jpg');  /* предполагаем, что файл лежит в /public/images */
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center;
-    border: none;
     border-radius: 5px;
 }
-.det{
-    display: grid;
-    grid-template-columns: auto;
-    grid-column: auto;
-}
-.W{
+
+/* Цветные блоки (ЭТО РУССКИЙ САЙТ) */
+.W {
     display: inline-block;
     font-size: 20px;
     margin: 5px;
@@ -76,7 +87,7 @@ header{
     box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
 }
-.R{
+.R {
     display: inline-block;
     font-size: 20px;
     margin: 5px;
@@ -88,7 +99,7 @@ header{
     box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
 }
-.B{
+.B {
     display: inline-block;
     font-size: 20px;
     margin: 5px;
@@ -100,20 +111,19 @@ header{
     box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.3);
     box-sizing: border-box;
 }
-.Cell{
+
+/* Ячейка с приветствием (стеклянный эффект) */
+.Cell {
     text-align: center;
 }
-audio {
-    width: 100%;
-}
-.Lade{
-    margin: 10px;
+.Lade {
+    margin: 10px auto;
     display: inline-block;
     width: auto;
     height: auto;
     background-color: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(15px); 
-    -webkit-backdrop-filter: blur(10px); 
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
     text-align: center;
@@ -124,16 +134,18 @@ audio {
     z-index: 1;
     box-sizing: border-box;
 }
-nav{
+
+/* Навигация */
+nav {
     text-align: center;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin: 10px 0;
 }
-p{
+p {
     padding: 7px;
 }
-/* Улучшенные стили ссылок и кнопок */
-a{
+
+/* Универсальные ссылки */
+a {
     display: inline-block;
     margin: 8px;
     padding: 5px;
@@ -147,11 +159,13 @@ a{
     color: black;
     font-weight: normal;
 }
-a:hover{
+a:hover {
     background-color: gray;
     transform: scale(1.05);
     color: rgb(227, 255, 124);
 }
+
+/* Кнопки (глобальные) – используются вне форм */
 button {
     display: inline-block;
     width: auto;
@@ -175,21 +189,11 @@ button:hover {
     transform: scale(1.05);
     color: white;
 }
-/* Для форм кнопки могут быть другими, но не переопределяем глобально */
-form button {
-    background-color: #4CAF50;
-    color: white;
-    text-transform: none;
-    border: none;
-    box-shadow: none;
-}
-form button:hover {
-    background-color: #45a049;
-    transform: scale(1.02);
-}
+
+/* Аккордеон (для навигации и контента) */
 .accordion details {
     display: inline-block;
-    background-color: var(--background-color); 
+    background-color: var(--background-color);
     margin-bottom: 10px;
     border-radius: 5px;
 }
@@ -198,10 +202,9 @@ form button:hover {
     border-bottom: 1px solid gray;
     background-color: var(--background-color);
     cursor: pointer;
-    outline: none; 
+    outline: none;
     list-style: none;
     transition: background-color 0.5s ease-in-out;
-    transition: color 0.1s ease-in-out;
 }
 .accordion summary::before {
     content: '>';
@@ -209,7 +212,7 @@ form button:hover {
     margin-right: 5px;
     transition: transform 0.1s ease;
 }
-.accordion summary:hover{
+.accordion summary:hover {
     color: rgb(255, 255, 255);
     background-color: #ccc;
 }
@@ -217,35 +220,21 @@ form button:hover {
     transform: rotate(90deg);
 }
 
-section{
+/* Секции и статьи */
+section {
     background-color: var(--section-background);
     margin: 15px;
     display: flex;
-    justify-items: center;
+    justify-content: center;
     text-align: center;
     color: var(--text-color);
     border-radius: 5px;
-    margin-top: 10px;
-    margin-bottom: 10px;
 }
-
-article{
-    margin-top: 20px;
-    margin-bottom: 20px;
-    margin: auto;
-    display: block;
+article {
+    margin: 20px auto;
     text-align: center;
 }
-
-.cat-container{
-    margin-top: 20px;
-}
-
-li{
-    padding: auto;
-}
-
-aside{
+aside {
     display: inline-block;
     height: auto;
     text-align: left;
@@ -256,27 +245,31 @@ aside{
     margin-bottom: 9px;
 }
 
-h1, h2, h3, h4, h5, h6{
-    border-bottom: 5px, solid, gray;
+/* Заголовки */
+h1, h2, h3, h4, h5, h6 {
+    border-bottom: 5px solid gray;
 }
-
-h3, h4, h5, h6{
+h3, h4, h5, h6 {
     color: var(--color-zagalavok);
     text-align: center;
 }
-h1, h2{
+h1, h2 {
     text-align: center;
 }
 
-footer{
+/* Подвал */
+footer {
     text-align: center;
     background-color: var(--footer-background);
-    margin-bottom: none;
 }
 
-.cat-image{
+/* Вспомогательные классы */
+.cat-container {
+    margin-top: 20px;
+}
+.cat-image {
     width: 300px;
-    height: 300px; 
+    height: 300px;
     clip-path: circle(50% at 50% 50%);
     object-fit: cover;
 }
@@ -301,164 +294,8 @@ footer{
     background-color: #d1ecf1;
     border: 1px solid #bee5eb;
 }
-audio {
-    display: block;
-    width: 100%;
-    margin: 0 auto;
-}
 
-/* ========== НОВЫЕ СТИЛИ ========== */
-
-/* Страница авторизации (регистрация / вход) */
-.auth-container {
-    display: flex;
-    gap: 40px;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin: 20px auto;
-    max-width: 1000px;
-}
-.auth-card {
-    flex: 1;
-    min-width: 280px;
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-}
-.auth-card h2 {
-    text-align: center;
-    margin-bottom: 25px;
-    color: #333;
-    border-bottom: none;
-}
-.auth-card input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 20px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 16px;
-}
-.auth-card label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 20px;
-    font-size: 16px;
-    white-space: normal;
-}
-.auth-card button {
-    width: 100%;
-    padding: 12px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 18px;
-    cursor: pointer;
-}
-.auth-card button:hover {
-    background-color: #45a049;
-    transform: none;
-}
-
-/* Страница профиля */
-.profile-container {
-    max-width: 600px;
-    margin: 40px auto;
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    padding: 30px;
-    text-align: center;
-}
-.profile-info {
-    text-align: left;
-    margin: 20px 0;
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 12px;
-}
-.profile-info p {
-    margin: 12px 0;
-    font-size: 18px;
-}
-.profile-actions {
-    margin-top: 25px;
-}
-.profile-actions a, .profile-actions form {
-    display: inline-block;
-    margin: 5px;
-}
-
-/* Баннер cookie */
-.cookie-banner {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(44,62,80,0.95);
-    color: white;
-    padding: 15px;
-    text-align: center;
-    z-index: 9999;
-    display: none;
-    backdrop-filter: blur(4px);
-}
-.cookie-banner p {
-    margin: 0 0 10px 0;
-}
-.cookie-banner button {
-    margin: 0 5px;
-    padding: 8px 25px;
-    border: none;
-    border-radius: 30px;
-    font-size: 16px;
-    cursor: pointer;
-    text-transform: none;
-    text-decoration: none;
-    background: #4CAF50;
-    color: white;
-}
-.cookie-banner #reject-cookies {
-    background: #f44336;
-}
-.cookie-banner button:hover {
-    transform: scale(1.02);
-    background: #2c3e50;
-}
-
-/* Универсальные стили для форм (чтобы поля ввода везде были удобными) */
-input, select, textarea {
-    width: 100%;
-    max-width: 100%;
-    padding: 10px;
-    margin: 5px 0 15px 0;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 16px;
-    box-sizing: border-box;
-}
-form button {
-    width: auto;
-    min-width: 120px;
-    padding: 10px 20px;
-    font-size: 16px;
-    text-transform: none;
-    text-decoration: none;
-    background-color: #4CAF50;
-    border: none;
-    border-radius: 5px;
-    color: white;
-    cursor: pointer;
-}
-form button:hover {
-    background-color: #45a049;
-    transform: scale(1.02);
-}
-
-/* Адаптивность для мобильных и планшетов */
+/* Адаптивность (только базовые правила, не затрагивающие стили отдельных страниц) */
 @media (min-width: 500px) and (max-width: 775px) {
     body {
         font-size: 22px;
@@ -498,17 +335,13 @@ form button:hover {
         height: 500px;
     }
     table {
-        width: 100%;
-        display: block;
+        max-width: 100%;
         overflow-x: auto;
-        white-space: nowrap;
+        display: block;  /* для прокрутки таблицы */
     }
     th, td {
         padding: 8px;
         font-size: 18px;
-    }
-    article {
-        margin: 10px;
     }
     section {
         flex-direction: column;
@@ -524,35 +357,11 @@ form button:hover {
         margin: 5px auto;
         width: 80%;
     }
-    audio {
-        width: 100%;
-    }
-    .auth-container {
-        flex-direction: column;
-        gap: 20px;
-    }
-    .profile-container {
-        margin: 20px;
-    }
 }
 
 @media (max-width: 499px) {
     body {
         font-size: 18px;
-        background-attachment: fixed;
-    }
-    img, audio, iframe, video, table, form {
-        max-width: 100%;
-        height: auto;
-    }
-    audio, iframe {
-        width: 100%;
-    }
-    table{
-        overflow-x: auto;
-    }
-    article {
-        overflow-x: auto;
     }
     .body {
         width: 100%;
@@ -606,12 +415,6 @@ form button:hover {
         padding: 5px 10px;
         margin: 5px;
     }
-    .cat-container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-    }
     .cat-image {
         width: 120px;
         height: 120px;
@@ -626,53 +429,11 @@ form button:hover {
     }
     table {
         display: block;
-        max-width: 100%;
         overflow-x: auto;
-        white-space: nowrap;
-    }
-    td, th {
-        white-space: nowrap;
-    }
-    input, select, textarea {
-        width: 100%;
-        font-size: 16px;
-    }
-    form label, form p {
-        text-align: left;
     }
     aside {
         width: 95%;
         margin: 10px auto;
         font-size: 16px;
-    }
-    footer a {
-        font-size: 16px;
-    }
-    audio {
-        width: 100%;
-    }
-    form button {
-        display: block;
-        width: 100%;
-        margin: 10px 0;
-    }
-    .auth-container {
-        flex-direction: column;
-        gap: 20px;
-    }
-    .auth-card {
-        width: 100%;
-        margin: 0;
-    }
-    .profile-container {
-        margin: 20px;
-        padding: 20px;
-    }
-    .cookie-banner {
-        padding: 10px;
-    }
-    .cookie-banner button {
-        margin: 5px;
-        padding: 6px 15px;
     }
 }
