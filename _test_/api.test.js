@@ -3,12 +3,13 @@ const app = require('../index');
 const { ensureDemoUser, TEST_USER } = require('./helpers');
 
 beforeAll(async () => {
-    await ensureDemoUser();   // ← создаём пользователя перед всеми тестами
+    await ensureDemoUser();
 });
 
 describe('API формально-юридической модели', () => {
     let demoAgent;
 
+    // Создаём агента заново для каждой группы, чтобы не превышать лимит запросов
     beforeAll(async () => {
         demoAgent = request.agent(app);
         await demoAgent
@@ -51,15 +52,17 @@ describe('API формально-юридической модели', () => {
 });
 
 describe('POST /submit-feedback', () => {
-    it('должен вернуть 400, если feedback отсутствует', async () => {
-        const demoAgent = request.agent(app);
+    let demoAgent;
+    beforeAll(async () => {
+        demoAgent = request.agent(app);
         await demoAgent.post('/login').send({ email: TEST_USER.email, password: TEST_USER.password }).expect(302);
+    });
+
+    it('должен вернуть 400, если feedback отсутствует', async () => {
         const res = await demoAgent.post('/submit-feedback').send({}).expect(400);
         expect(res.body.error).toBe('No feedback provided');
     });
     it('должен сохранить фидбек', async () => {
-        const demoAgent = request.agent(app);
-        await demoAgent.post('/login').send({ email: TEST_USER.email, password: TEST_USER.password }).expect(302);
         const res = await demoAgent.post('/submit-feedback').send({ feedback: 'Тест' }).expect(200);
         expect(res.body.message).toBe('Feedback saved');
         expect(res.body.id).toBeDefined();
