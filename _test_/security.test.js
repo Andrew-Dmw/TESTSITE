@@ -49,7 +49,7 @@ describe('Защита и безопасность', () => {
         const promises = [];
         for (let i = 0; i < 15; i++) {
             promises.push(
-                agent3.get('/').set('X-Forwarded-For', `10.0.0.${i % 255}`)
+                agent3.get('/')   // без заголовка X-Forwarded-For, IP будет 127.0.0.1
             );
         }
         const results = await Promise.allSettled(promises);
