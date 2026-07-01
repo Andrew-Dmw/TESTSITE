@@ -56,7 +56,7 @@ describe('POST /submit-feedback', () => {
     let demoAgent;
     beforeAll(async () => {
         demoAgent = request.agent(app);
-        // Другой IP для этой группы
+        // Логин для этой группы
         await demoAgent
             .post('/login')
             .set('X-Forwarded-For', '10.0.0.2')
@@ -65,11 +65,20 @@ describe('POST /submit-feedback', () => {
     });
 
     it('должен вернуть 400, если feedback отсутствует', async () => {
-        const res = await demoAgent.post('/submit-feedback').send({}).expect(400);
+        const res = await demoAgent
+            .post('/submit-feedback')
+            .set('X-Forwarded-For', '10.0.0.3')   // отдельный IP
+            .send({})
+            .expect(400);
         expect(res.body.error).toBe('No feedback provided');
     });
+
     it('должен сохранить фидбек', async () => {
-        const res = await demoAgent.post('/submit-feedback').send({ feedback: 'Тест' }).expect(200);
+        const res = await demoAgent
+            .post('/submit-feedback')
+            .set('X-Forwarded-For', '10.0.0.4')   // ещё один отдельный IP
+            .send({ feedback: 'Тест' })
+            .expect(200);
         expect(res.body.message).toBe('Feedback saved');
         expect(res.body.id).toBeDefined();
     });
