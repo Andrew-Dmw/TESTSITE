@@ -9,11 +9,12 @@ beforeAll(async () => {
 describe('API формально-юридической модели', () => {
     let demoAgent;
 
-    // Создаём агента заново для каждой группы, чтобы не превышать лимит запросов
     beforeAll(async () => {
         demoAgent = request.agent(app);
+        // Уникальный IP для этой группы тестов
         await demoAgent
             .post('/login')
+            .set('X-Forwarded-For', '10.0.0.1')
             .send({ email: TEST_USER.email, password: TEST_USER.password })
             .expect(302);
     });
@@ -55,7 +56,12 @@ describe('POST /submit-feedback', () => {
     let demoAgent;
     beforeAll(async () => {
         demoAgent = request.agent(app);
-        await demoAgent.post('/login').send({ email: TEST_USER.email, password: TEST_USER.password }).expect(302);
+        // Другой IP для этой группы
+        await demoAgent
+            .post('/login')
+            .set('X-Forwarded-For', '10.0.0.2')
+            .send({ email: TEST_USER.email, password: TEST_USER.password })
+            .expect(302);
     });
 
     it('должен вернуть 400, если feedback отсутствует', async () => {
