@@ -15,15 +15,25 @@ const TEST_USER = {
 };
 
 async function ensureDemoUser() {
-    const pepper = process.env.PASSWORD_PEPPER || 'test_pepper';
-    const hashedPassword = await bcrypt.hash(TEST_USER.password + pepper, 10);
-    const conn = await mysql.createConnection(TEST_DB);
-    await conn.execute(`
-        INSERT INTO users (email, name, password_hash, role, privacy_consent_given, privacy_consent_date)
-        VALUES (?, 'Demo User', ?, 'admin', TRUE, NOW())
-        ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), role = VALUES(role)
-    `, [TEST_USER.email, hashedPassword]);
-    await conn.end();
+    console.log('🔧 ensureDemoUser: starting...');
+    try {
+        const pepper = process.env.PASSWORD_PEPPER || 'test_pepper';
+        const hashedPassword = await bcrypt.hash(TEST_USER.password + pepper, 10);
+        console.log('🔧 ensureDemoUser: hashed password created');
+        const conn = await mysql.createConnection(TEST_DB);
+        console.log('🔧 ensureDemoUser: connected to test DB');
+        await conn.execute(`
+            INSERT INTO users (email, name, password_hash, role, privacy_consent_given, privacy_consent_date)
+            VALUES (?, 'Demo User', ?, 'admin', TRUE, NOW())
+            ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), role = VALUES(role)
+        `, [TEST_USER.email, hashedPassword]);
+        console.log('🔧 ensureDemoUser: user inserted/updated');
+        await conn.end();
+        console.log('✅ ensureDemoUser: success');
+    } catch (err) {
+        console.error('❌ ensureDemoUser ERROR:', err);
+        throw err;
+    }
 }
 
 module.exports = { TEST_DB, TEST_USER, ensureDemoUser };
