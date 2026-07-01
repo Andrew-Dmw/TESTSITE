@@ -45,8 +45,7 @@ if (!pepper) {
 
 // Создаём экземпляр Express
 const app = express();
-// Глобальный rate limiter
-app.use(limiter);
+
 // ================================================================
 // Базовая настройка CORS
 // Указываем конкретный origin для безопасности, credentials – для кук
@@ -230,6 +229,9 @@ function isAdmin(req, res, next) {
 const getClientIp = (req) => {
     return req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 };
+
+// Глобальный rate limiter для всех динамических запросов (кроме статики)
+app.use(limiter);
 
 // ================================================================
 // МАРШРУТЫ
