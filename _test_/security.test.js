@@ -1,6 +1,11 @@
 const request = require('supertest');
 const app = require('../index');
 const { ensureDemoUser, TEST_USER } = require('./helpers');
+const pool = app.pool;
+
+afterAll(async () => {
+    if (pool) await pool.end();
+});
 
 beforeAll(async () => {
     await ensureDemoUser();
@@ -14,9 +19,17 @@ async function loginAndGetAgent(email, password) {
 
 describe('Защита и безопасность', () => {
     let agent;
+    let csrfToken;   // добавим переменную
 
     beforeAll(async () => {
         agent = await loginAndGetAgent(TEST_USER.email, TEST_USER.password);
+        // Получаем CSRF-токен: csurf выставит куку при любом не‑JSON запросе
+        const res = await agent.get('/main');
+        const cookies = res.headers['set-cookie'] || [];
+        const csrfCookie = cookies.find(c => c.startsWith('_csrf='));
+        if (csrfCookie) {
+            csrfToken = csrfCookie.split(';')[0].split('=')[1];
+        }
     });
 
     it('Honeypot должен блокировать ботов', async () => {
@@ -28,7 +41,8 @@ describe('Защита и безопасность', () => {
                 Like: 'cats',
                 COMMENT: 'test',
                 dateTime: '2025-07-30T14:47',
-                honeypot: 'anything'
+                honeypot: 'anything',
+                _csrf: csrfToken            // ← передаём токен
             })
             .expect(400);
         expect(res.body.error).toBe('Invalid request');
