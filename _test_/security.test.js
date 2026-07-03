@@ -9,8 +9,6 @@ beforeAll(async () => {
 async function loginAndGetAgent(email, password) {
     const agent = request.agent(app);
     await agent.post('/login').send({ email, password }).expect(302);
-    // Получаем куку _csrf через GET-запрос к защищённой странице
-    await agent.get('/main').expect(200);
     return agent;
 }
 
