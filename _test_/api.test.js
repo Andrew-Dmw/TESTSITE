@@ -1,6 +1,11 @@
 const request = require('supertest');
 const app = require('../index');
 const { ensureDemoUser, TEST_USER } = require('./helpers');
+const pool = app.pool;
+
+afterAll(async () => {
+    if (pool) await pool.end();
+});
 
 beforeAll(async () => {
     await ensureDemoUser();
