@@ -34,15 +34,14 @@ describe('Защита и безопасность', () => {
         expect(res.body.error).toBe('Invalid request');
     });
 
-    it('Должен отклонить POST без CSRF-токена (в тестовой среде пропускается)', async () => {
+    it('Должен отклонить POST без CSRF-токена', async () => {
         const agent2 = request.agent(app);
         await agent2.post('/login').send({ email: TEST_USER.email, password: TEST_USER.password }).expect(302);
         const res = await agent2
             .post('/save-data')
             .type('form')
             .send({ Z: 'v', Like: 'tests', COMMENT: 'test', dateTime: '2025-07-30T14:47' });
-        // В тестовой среде CSRF отключен, поэтому запрос не блокируется и перенаправляет
-        expect(res.status).toBe(302);
+        expect(res.status).toBe(403);
     });
 
     it('Rate limiting должен блокировать частые запросы', async () => {
