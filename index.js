@@ -187,36 +187,25 @@ const limiter = rateLimit({
     message: "Слишком много запросов..."
 });
 
-// ================================================================
-// CSRF-защита (исправлено)
-// Не применяем глобально, только на маршруты с формами.
-// Глобально устанавливаем csrfToken для шаблонов.
-// ================================================================
-// CSRF-защита (всегда включена для нужных маршрутов)
-// ================================================================
-// CSRF-защита
-// ================================================================
-if (process.env.NODE_ENV !== 'test') {
-    const csrfProtection = csurf({ cookie: false });
+/*
+CSRF-защита (исправлено)
+CSRF-защита: применяется ко всем не-JSON запросам
+*/
+const csrfProtection = csurf({ cookie: false });
 
-    // Глобально добавляем токен в res.locals для шаблонов
-    app.use((req, res, next) => {
-        res.locals.csrfToken = req.csrfToken();
-        next();
-    });
+app.use((req, res, next) => {
+    // JSON-запросы (API) пропускаем без проверки CSRF
+    if (req.is('application/json')) {
+        return next();
+    }
+    csrfProtection(req, res, next);
+});
 
-    // Применяем защиту только к формам, где она нужна
-    app.use('/save-data', csrfProtection);
-    app.use('/revoke-consent', csrfProtection);
-    app.use('/delete-data', csrfProtection);
-} else {
-    // В тестовой среде метод csrfToken должен существовать, но проверка отключена
-    app.use((req, res, next) => {
-        req.csrfToken = () => 'test-token';   // заглушка
-        res.locals.csrfToken = 'test-token';
-        next();
-    });
-}
+// Токен доступен во всех шаблонах
+app.use((req, res, next) => {
+    res.locals.csrfToken = req.csrfToken();
+    next();
+});
 
 // ================================================================
 // Middleware для проверки авторизации и ролей
