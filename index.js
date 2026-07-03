@@ -191,7 +191,7 @@ const limiter = rateLimit({
 CSRF-защита (исправлено)
 CSRF-защита: применяется ко всем не-JSON запросам
 */
-const csrfProtection = csurf({ cookie: false });
+const csrfProtection = csurf({ cookie: true });  // ← cookie: true
 
 // Применяем csurf только к не‑JSON запросам
 app.use((req, res, next) => {
@@ -201,7 +201,7 @@ app.use((req, res, next) => {
     csrfProtection(req, res, next);
 });
 
-// Добавляем токен в шаблоны только для не‑JSON запросов
+// Добавляет токен в шаблоны для всех не‑JSON запросов
 app.use((req, res, next) => {
     if (!req.is('application/json')) {
         res.locals.csrfToken = req.csrfToken();
