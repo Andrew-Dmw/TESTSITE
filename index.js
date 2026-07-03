@@ -193,17 +193,19 @@ CSRF-защита: применяется ко всем не-JSON запроса
 */
 const csrfProtection = csurf({ cookie: false });
 
+// Применяем csurf только к не‑JSON запросам
 app.use((req, res, next) => {
-    // JSON-запросы (API) пропускаем без проверки CSRF
     if (req.is('application/json')) {
         return next();
     }
     csrfProtection(req, res, next);
 });
 
-// Токен доступен во всех шаблонах
+// Добавляем токен в шаблоны только для не‑JSON запросов
 app.use((req, res, next) => {
-    res.locals.csrfToken = req.csrfToken();
+    if (!req.is('application/json')) {
+        res.locals.csrfToken = req.csrfToken();
+    }
     next();
 });
 
