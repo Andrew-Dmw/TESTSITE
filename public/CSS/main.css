@@ -27,10 +27,9 @@
     background: #f44336;
 }
 
-/* --- Стили для шапки (цветные буквы) --- */
-.W { color: white; }
-.B { color: blue; }
-.R { color: red; }
+#honeypot{
+    display: none !important;
+}
 
 /* Общие стили можно добавить, если не подключается style.css */
 body {

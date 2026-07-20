@@ -28,6 +28,11 @@ body {
     font-weight: 700;
     margin-bottom: 10px;
 }
+
+#honeypot{
+    display: none !important;
+}
+
 .hero .subhead {
     font-size: 1.1rem;
     opacity: 0.9;

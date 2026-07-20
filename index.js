@@ -250,7 +250,10 @@ app.get('/', (req, res) => {
 
 // Политика конфиденциальности
 app.get('/privacy', (req, res) => {
-    res.render('privacy', { title: 'Политика конфиденциальности'});
+    res.render('privacy', { 
+        title: 'Политика конфиденциальности',
+        layout: false
+    });
 });
 
 // Главная страница после входа
@@ -259,6 +262,7 @@ app.get('/main', isAuthenticated, (req, res) => {
     const showCookieBanner = !cookieConsent;
     res.render('main', {
         title: 'Главная',
+        layout: false,
         csrfToken: res.locals.csrfToken,
         user: {
             name: req.session.userName,
@@ -551,10 +555,7 @@ app.post('/register', limiter, async (req, res) => {
     if (!password || password.length < 8) {
         return res.status(400).json({ error: 'Пароль должен быть не менее 8 символов' });
     }
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
-    if (!passwordRegex.test(password)) {
-        return res.status(400).json({ error: 'Пароль должен содержать хотя бы одну букву, одну цифру и один спецсимвол' });
-    }
+
     if (!privacyConsent) {
         return res.status(400).json({ error: 'Необходимо согласие с политикой конфиденциальности' });
     }
