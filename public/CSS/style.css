@@ -21,16 +21,20 @@
 /* Тёмная тема (при добавлении класса .bodyBlack к контейнеру) */
 .bodyBlack {
     --background-color: rgb(0, 0, 0);
-    --text-color: rgb(255, 255, 255);
+    --text-color: rgb(195, 193, 193);
     --section-background: rgb(0, 0, 0);
     --footer-background: rgb(0, 0, 0);
+}
+
+#honeypot{
+    display: none !important;
 }
 
 /* Базовые настройки страницы */
 body {
     font-size: 30px;
     font-family: 'Inter', Arial, Helvetica, sans-serif;  /* добавлен Inter */
-    background: linear-gradient(135deg, #ff6969 0%, #10cfff 100%);
+    background: rgb(247, 246, 246);
     background-repeat: no-repeat;
     background-size: cover;
     background-attachment: fixed; /* чтобы фон не сжимался */
@@ -67,10 +71,10 @@ th, td {
 
 /* Шапка */
 header {
-    background-image: url('/images/B.jpg');  /* предполагаем, что файл лежит в /public/images */
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center;
+    background-image: url('/images/law.jpg');   /* путь к картинке */
+    background-repeat: no-repeat;               /* ❗️ убираем повторение */
+    background-size: cover;                     /* (опционально) растянуть на весь блок */
+    background-position: center;                /* (опционально) центрировать */
     border-radius: 5px;
 }
 

@@ -22,7 +22,7 @@
         <!-- Форма входа отправляет urlencoded (стандартно), сервер должен принимать urlencoded -->
         <form id="login-form" method="post" action="/login" autocomplete="on">
             <!-- Honeypot для ботов -->
-            <input type="text" name="honeypot" style="display: none;" tabindex="-1" autocomplete="off">
+            <input type="text" name="honeypot" class=honeypot tabindex="-1" autocomplete="off">
             <!-- CSRF токен -->
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <input type="email" name="email" placeholder="Email" required autocomplete="email">
@@ -34,7 +34,6 @@
     <div id="register-tab" class="tab-content" style="display:none;">
         <form id="register-form" method="post" action="/register" autocomplete="on">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <input type="text" name="honeypot" style="display: none;" tabindex="-1" autocomplete="off">
             <input type="email" name="email" placeholder="Email" required autocomplete="email">
             <input type="text" name="name" placeholder="Имя" required autocomplete="name">
             <input type="password" name="password" placeholder="Пароль" required autocomplete="new-password">

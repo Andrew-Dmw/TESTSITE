@@ -1,164 +1,188 @@
-    <header>
-        <p>
-            <span class="W">ЭТО</span>
-            <span class="B">РУССКИЙ</span>
-            <span class="R">САЙТ</span>
-        </p>
-        <div class="Cell">
-            <div class="Lade">
-                <% if (user) { %>
-                    <p>Здравствуйте, <%= user.name %>! | <a href="/profile">Профиль</a></p>
-                    <form action="/logout" method="post" style="display: inline;">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                        <button type="submit">Выйти</button>
-                    </form>
-                <% } %>
-                <p>Мы очень рады, что вы посетили данный сайт!<br>Чувствуйте себя как дома:)</p>
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <!-- CSRF-токен для AJAX-запросов (единожды) -->
+        <meta name="csrf-token" content="<%= csrfToken %>">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Данный сайт представляет прототип юридической модели, которая реализует нормы права">
+        <meta property="og:title" content="Первый сайт">
+        <meta property="og:description" content="Данный сайт представляет прототип юридической модели, которая реализует нормы права">
+        <meta property="og:image" content="/images/og-image.png">
+        <meta property="og:url" content="https://myfirstsite.ru">
+        <!-- Фавиконка -->
+        <link rel="icon" href="/images/favicons-39145c3850b6c70457689ce17f2f9f7c(pr-cy.ru)/favicon.ico" type="image/x-icon">
+        <title><%= title %></title>
+        <link rel="stylesheet" href="/css/main.css?v=1.0">
+        <link rel="stylesheet" href="/css/style.css?v=1.0">
+    </head>
+    <body>
+        <div class="CB">
+            <div id="color" class="body">
+                <header>
+                <p>
+                    <span class="W">ЭТО</span>
+                    <span class="B">РУССКИЙ</span>
+                    <span class="R">САЙТ</span>
+                </p>
+                <div class="Cell">
+                    <div class="Lade">
+                        <% if (user) { %>
+                            <p>Здравствуйте, <%= user.name %>! | <a href="/profile">Профиль</a></p>
+                            <form action="/logout" method="post" style="display: inline;">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <button type="submit">Выйти</button>
+                            </form>
+                        <% } %>
+                        <p>Мы очень рады, что вы посетили данный сайт!<br>Чувствуйте себя как дома:)</p>
+                    </div>
+                </div>
+            </header>
+
+            <nav>
+                <p>
+                    <a href="/main">Главная</a>
+                    <a href="/ER">Модель</a>
+                    <% if (user && user.role === 'admin') { %>
+                        <a href="/admin/incidents">Администрирование (инциденты)</a>
+                    <% } %>
+                </p>
+            </nav>
+
+            <main>
+                <h2>О чём данный сайт?</h2>
+                <p>
+                    Данный сайт - это своего рода мини-разработка,
+                    <br>на котором находятся прототип-разработки формально-юридической модели,
+                    <br>а также небольшое введение в кибербезопасность.
+                </p>
+
+                <nav>
+                    <div class="accordion">
+                        <details>
+                            <summary id="nav">Содержание страницы/навигационное меню</summary>
+                            <div class="det">
+                                <a href="#DD">Отзыв</a>
+                                <a href="#v">Список того, что в будущем будет добавлено на сайт</a>
+                                <a href="#table">Справочная таблица</a>
+                                <a href="#warn">Правила работы с дарквебом</a>
+                            </div>
+                        </details>
+                    </div>
+                </nav>
+
+                <h1>Основное содержимое сайта</h1>
+
+                <section>
+                    <article>
+                        <h3 id="v">Список того, что в будущем будет добавлено на сайт <a href="#nav">К навигационному меню</a></h3>
+                        <ul style="list-style-type: circle">
+                            <li> Структура станет лучше (выполнено).</li>
+                            <li> Таблица (выполнено).</li>
+                            <li> Интерактивные элементы (выполнено).</li>
+                        </ul>
+                    </article>
+                </section>
+
+                <section>
+                    <article>
+                        <h3 id="table">Таблица того, что нужно <a href="#nav">К навигационному меню</a></h3>
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <th class="bg-red">Вопрос</th>
+                                    <th class="bg-red">Как давно сайт создаётся?</th>
+                                    <th class="bg-red">Скоро сайт завершится?</th>
+                                </tr>
+                                <tr>
+                                    <th rowspan="2" class="bg-green">Ответ</th>
+                                    <td class="bg-yellow">Уже больше года.</td>
+                                    <td rowspan="2" class="bg-yellow">По сути он завершён, но нужно настроить сервер.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </article>
+                </section>
+
+                <section>
+                    <article>
+                        <h3 id="warn">Правила работы с дарквебом (даркнетом) <a href="#nav">К навигационному меню</a></h3>
+                        <p>Здесь перечислены правила для работы с даркнетом, будьте предельно осторожны прежде чем использовать данную часть интернета.</p>
+                        <iframe src="/docs/WAR.html" width="1000" height="1000" alt="Здесь перечислены правила для работы с дарвебом."></iframe>
+                    </article>
+                </section>
+
+                <section>
+                    <article>
+                        <h3 id="DD"><em>Отзыв</em> <a href="#nav">К навигационному меню</a></h3>
+                        <p>Нам очень важно ваше мнение, поэтому, если вам не составит труда напишите отзыв о нашем сайте,<br>что вам нравиться и не нравиться. А также не забудьте отметить необходимую галочку.</p>
+                        <form id="myForm" action="/save-data" method="post" autocomplete="off">
+                            <fieldset autocomplete="off">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" autocomplete="off">
+                                <!-- Honeypot-поле для защиты от ботов (добавлено) -->
+                                <input type="text" name="honeypot" hidden id="honeypot" tabindex="-1" autocomplete="off">
+
+                                <p><label for="dateTimeInput">Выберите дату и время написания</label></p>
+                                <p><input type="datetime-local" id="dateTimeInput" name="dateTime" value="2025-07-30T14:47" autocomplete="off"></p>
+
+                                <p>Вам нравится сайт?</p>
+                                <input type="radio" id="YES" name="Z" value="v" autocomplete="off">
+                                <label for="YES">Да</label>
+                                <input type="radio" id="NOT" name="Z" value="k" autocomplete="off">
+                                <label for="NOT">Нет</label>
+                                <input type="radio" id="IDK" name="Z" value="l" autocomplete="off">
+                                <label for="IDK">Не знаю</label>
+
+                                <p><label for="LikeSelect">Какой раздел вам больше понравился?</label></p>
+                                <select id="LikeSelect" name="Like">
+                                    <optgroup label="Шапка">
+                                        <option selected value="Welcome">Добро пожаловать!</option>
+                                    </optgroup>
+                                    <optgroup label="Основная часть">
+                                        <option value="tests">Небольшие тесты</option>
+                                        <option value="spisok">Что в будущем будет добавлено на сайт</option>
+                                        <option value="red">Особая часть</option>
+                                    </optgroup>
+                                    <optgroup label="Подвал">
+                                        <option value="footer">Контактная информация</option>
+                                    </optgroup>
+                                </select>
+
+                                <p><label for="COMMENT">Напишите ваш отзыв о сайте.</label></p>
+                                <p><textarea id="COMMENT" name="COMMENT" rows="5" cols="30" maxlength="1000" placeholder="Напишите ваш отзыв о сайте." autocomplete="off"></textarea></p>
+
+                                <p><button type="submit" id="submitButton">Отправить</button> <button type="reset">Сбросить</button></p>
+                            </fieldset>
+                        </form>
+                    </article>
+                </section>
+
+                <aside>
+                    <h4><b>Прочие источники</b></h4>
+                    <div class="ui" id="ui">
+                        <a href="https://coursme.com/article/osnovy-veb-razrabotki-dlya-novichkov-html-css-i-javascript-s-prilozheniem-kodik" target="_blank" rel="noopener noreferrer">Основы веб-разработки</a>
+                        <a href="https://skillbox.ru" target="_blank" rel="noopener noreferrer">Скиллбокс</a>
+                        <a href="https://pikabu.ru/story/top_10_besplatnyikh_saytov_po_programmirovaniyu_10014416" target="_blank" rel="noopener noreferrer">Пикабу</a>
+                        <a href="https://youtube.com/playlist?list=PLs2IpQwiXpT3SqbqPzLCEy1fow9G7g0oY&si=8BWm86gBueP2nlzW" target="_blank" rel="noopener noreferrer">Мини-курс по питону</a>
+                    </div>
+                </aside>
+            </main>
+
+            <footer id="col">
+                <a href="#">Вернуться в начало страницы.</a>
+                <p>&copy; Все права защищены.</p>
+            </footer>
+
+            <% if (showCookieBanner) { %>
+            <div id="cookie-banner">
+                <p>Мы используем cookies для улучшения работы сайта. Вы можете принять или отклонить их. Технически необходимые cookies не требуют согласия.</p>
+                <button id="accept-cookies" class="cookie-btn accept">Принять</button>
+                <button id="reject-cookies" class="cookie-btn reject">Отклонить</button>
+            </div>
+            <% } %>
             </div>
         </div>
-    </header>
-
-    <nav>
-        <p>
-            <a href="/main">Главная</a>
-            <a href="/ER">Модель</a>
-            <% if (user && user.role === 'admin') { %>
-                <a href="/admin/incidents">Администрирование (инциденты)</a>
-            <% } %>
-        </p>
-    </nav>
-
-    <main>
-        <h2>О чём данный сайт?</h2>
-        <p>
-            Данный сайт - это своего рода мини-разработка,
-            <br>на котором находятся прототип-разработки формально-юридической модели,
-            <br>а также небольшое введение в кибербезопасность.
-        </p>
-
-        <nav>
-            <div class="accordion">
-                <details>
-                    <summary id="nav">Содержание страницы/навигационное меню</summary>
-                    <div class="det">
-                        <a href="#DD">Отзыв</a>
-                        <a href="#v">Список того, что в будущем будет добавлено на сайт</a>
-                        <a href="#table">Справочная таблица</a>
-                        <a href="#warn">Правила работы с дарквебом</a>
-                    </div>
-                </details>
-            </div>
-        </nav>
-
-        <h1>Основное содержимое сайта</h1> <!-- Исправлена лишняя > -->
-
-        <section>
-            <article>
-                <h3 id="v">Список того, что в будущем будет добавлено на сайт <a href="#nav">К навигационному меню</a></h3>
-                <ul style="list-style-type: circle"> <!-- Инлайн-стиль list-style-type разрешён? Нет, но можно оставить, если без 'unsafe-inline' браузеры всё равно применяют некоторые стандартные стили. Но для чистоты можно вынести в класс. Сделаем класс. -->
-                    <li> Структура станет лучше (выполнено).</li>
-                    <li> Таблица (выполнено).</li>
-                    <li> Интерактивные элементы (выполнено).</li>
-                </ul>
-            </article>
-        </section>
-
-        <section>
-            <article>
-                <h3 id="table">Таблица того, что нужно <a href="#nav">К навигационному меню</a></h3>
-                <table>
-                    <tbody>
-                        <tr>
-                            <th class="bg-red">Вопрос</th>
-                            <th class="bg-red">Как давно сайт создаётся?</th>
-                            <th class="bg-red">Скоро сайт завершится?</th>
-                        </tr>
-                        <tr>
-                            <th rowspan="2" class="bg-green">Ответ</th>
-                            <td class="bg-yellow">Уже больше года.</td>
-                            <td rowspan="2" class="bg-yellow">По сути он завершён, но нужно настроить сервер.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </article>
-        </section>
-
-        <section>
-            <article>
-                <h3 id="warn">Правила работы с дарквебом (даркнетом) <a href="#nav">К навигационному меню</a></h3>
-                <p>Здесь перечислены правила для работы с даркнетом, будьте предельно осторожны прежде чем использовать данную часть интернета.</p>
-                <iframe src="/docs/WAR.html" width="1000" height="1000" alt="Здесь перечислены правила для работы с дарвебом."></iframe>
-            </article>
-        </section>
-
-        <section>
-            <article>
-                <h3 id="DD"><em>Отзыв</em> <a href="#nav">К навигационному меню</a></h3>
-                <p>Нам очень важно ваше мнение, поэтому, если вам не составит труда напишите отзыв о нашем сайте,<br>что вам нравиться и не нравиться. А также не забудьте отметить необходимую галочку.</p>
-                <form id="myForm" action="/save-data" method="post" autocomplete="off">
-                    <fieldset autocomplete="off">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" autocomplete="off">
-                        <!-- Honeypot-поле для защиты от ботов (добавлено) -->
-                        <input type="text" name="honeypot" style="display: none;" tabindex="-1" autocomplete="off">
-
-                        <p><label for="dateTimeInput">Выберите дату и время написания</label></p>
-                        <p><input type="datetime-local" id="dateTimeInput" name="dateTime" value="2025-07-30T14:47" autocomplete="off"></p>
-
-                        <p>Вам нравится сайт?</p>
-                        <input type="radio" id="YES" name="Z" value="v" autocomplete="off">
-                        <label for="YES">Да</label>
-                        <input type="radio" id="NOT" name="Z" value="k" autocomplete="off">
-                        <label for="NOT">Нет</label>
-                        <input type="radio" id="IDK" name="Z" value="l" autocomplete="off">
-                        <label for="IDK">Не знаю</label>
-
-                        <p><label for="LikeSelect">Какой раздел вам больше понравился?</label></p>
-                        <select id="LikeSelect" name="Like">
-                            <optgroup label="Шапка">
-                                <option selected value="Welcome">Добро пожаловать!</option>
-                            </optgroup>
-                            <optgroup label="Основная часть">
-                                <option value="tests">Небольшие тесты</option>
-                                <option value="spisok">Что в будущем будет добавлено на сайт</option>
-                                <option value="red">Особая часть</option>
-                            </optgroup>
-                            <optgroup label="Подвал">
-                                <option value="footer">Контактная информация</option>
-                            </optgroup>
-                        </select>
-
-                        <p><label for="COMMENT">Напишите ваш отзыв о сайте.</label></p>
-                        <p><textarea id="COMMENT" name="COMMENT" rows="5" cols="30" maxlength="1000" placeholder="Напишите ваш отзыв о сайте." autocomplete="off"></textarea></p>
-
-                        <p><button type="submit" id="submitButton">Отправить</button> <button type="reset">Сбросить</button></p>
-                    </fieldset>
-                </form>
-            </article>
-        </section>
-
-        <aside>
-            <h4><b>Прочие источники</b></h4>
-            <div class="ui" id="ui">
-                <a href="https://coursme.com/article/osnovy-veb-razrabotki-dlya-novichkov-html-css-i-javascript-s-prilozheniem-kodik" target="_blank" rel="noopener noreferrer">Основы веб-разработки</a>
-                <a href="https://skillbox.ru" target="_blank" rel="noopener noreferrer">Скиллбокс</a>
-                <a href="https://pikabu.ru/story/top_10_besplatnyikh_saytov_po_programmirovaniyu_10014416" target="_blank" rel="noopener noreferrer">Пикабу</a>
-                <a href="https://youtube.com/playlist?list=PLs2IpQwiXpT3SqbqPzLCEy1fow9G7g0oY&si=8BWm86gBueP2nlzW" target="_blank" rel="noopener noreferrer">Мини-курс по питону</a>
-            </div>
-        </aside>
-    </main>
-
-    <footer id="col">
-        <a href="#">Вернуться в начало страницы.</a>
-        <p>&copy; Все права защищены.</p>
-    </footer>
-
-    <% if (showCookieBanner) { %>
-    <div id="cookie-banner">
-        <p>Мы используем cookies для улучшения работы сайта. Вы можете принять или отклонить их. Технически необходимые cookies не требуют согласия.</p>
-        <button id="accept-cookies" class="cookie-btn accept">Принять</button>
-        <button id="reject-cookies" class="cookie-btn reject">Отклонить</button>
-    </div>
-    <% } %>
-
-    <script src="/js/S-2.js"></script>
-    <script src="/js/S-1.js"></script>
+        <script src="/js/S-2.js"></script>
+        <script src="/js/S-1.js"></script>
+    </body>
+</html>
