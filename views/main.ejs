@@ -29,12 +29,10 @@
                     <div class="Lade">
                         <% if (user) { %>
                             <p>Здравствуйте, <%= user.name %>! | <a href="/profile">Профиль</a></p>
-                            <form action="/logout" method="post" style="display: inline;">
                                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                <button type="submit">Выйти</button>
-                            </form>
+                                <button id= "backgroundCSS" type="submit">Изменить фон</button>
                         <% } %>
-                        <p>Мы очень рады, что вы посетили данный сайт!<br>Чувствуйте себя как дома:)</p>
+                        <p>Мы очень рады, что вы посетили данный сайт!<br>Чувствуйте себя как дома</p>
                     </div>
                 </div>
             </header>
@@ -182,7 +180,7 @@
             <% } %>
             </div>
         </div>
-        <script src="/js/S-2.js"></script>
+        <script src="/js/S-2.js" defer></script>
         <script src="/js/S-1.js"></script>
     </body>
 </html>
