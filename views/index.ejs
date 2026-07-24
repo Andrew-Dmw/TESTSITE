@@ -1,50 +1,11 @@
 <!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/css/auth.css"> <!-- Внешний файл стилей -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="icon" href="/images/favicons-39145c3850b6c70457689ce17f2f9f7c(pr-cy.ru)/favicon.ico" type="image/x-icon">
-    <title>Регистрация / Вход</title>
-    <!-- CSRF-токен для возможных AJAX-запросов -->
-    <meta name="csrf-token" content="<%= csrfToken %>">
-</head>
-<body>
-<div class="container">
-    <h1>Добро пожаловать</h1>
-    <div class="tabs">
-        <button class="tab-btn active" data-tab="login">Вход</button>
-        <button class="tab-btn" data-tab="register">Регистрация</button>
-    </div>
-
-    <div id="login-tab" class="tab-content active">
-        <!-- Форма входа отправляет urlencoded (стандартно), сервер должен принимать urlencoded -->
-        <form id="login-form" method="post" action="/login" autocomplete="on">
-            <!-- Honeypot для ботов -->
-            <input type="text" name="honeypot" class=honeypot tabindex="-1" autocomplete="off">
-            <!-- CSRF токен -->
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <input type="email" name="email" placeholder="Email" required autocomplete="email">
-            <input type="password" name="password" placeholder="Пароль" required autocomplete="current-password">
-            <button type="submit">Войти</button>
-        </form>
-    </div>
-
-    <div id="register-tab" class="tab-content" style="display:none;">
-        <form id="register-form" method="post" action="/register" autocomplete="on">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <input type="email" name="email" placeholder="Email" required autocomplete="email">
-            <input type="text" name="name" placeholder="Имя" required autocomplete="name">
-            <input type="password" name="password" placeholder="Пароль" required autocomplete="new-password">
-            <label>
-                <input type="checkbox" name="privacyConsent" required>
-                Я согласен с <a href="/privacy" target="_blank" rel="noopener">политикой конфиденциальности</a>
-            </label>
-            <button type="submit">Зарегистрироваться</button>
-        </form>
-    </div>
-</div>
-<script src="/js/S-4.js"></script>
-</body>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <h1><%= title %></h1>
+    <p>Welcome to <%= title %></p>
+  </body>
 </html>
