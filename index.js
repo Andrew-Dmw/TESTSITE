@@ -17,6 +17,8 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const cookieParser = require('cookie-parser');
 const nodemailer = require('nodemailer');
+const adminRoutes = require('./routes/admin');
+const pool = require('./db');
 
 // ================================================================
 // Конфигурация Nodemailer (для отправки уведомлений)
@@ -26,11 +28,20 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT),
-    secure: false, // для порта 587 (STARTTLS)
+    secure: process.env.SMTP_SECURE === 'true' || true,
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
     },
+});
+
+transporter.verify((error, success) => {
+    if (error) {
+        console.error('❌ SMTP не работает:', error.message);
+        logger.warn("Письма не будут доставляться пользователям")
+    } else {
+        console.log('✅ SMTP настроен, письма летают!');
+    }
 });
 
 // ================================================================
@@ -40,7 +51,7 @@ const transporter = nodemailer.createTransport({
 const pepper = process.env.PASSWORD_PEPPER || config.pepper;
 if (!pepper) {
     console.error('❌ PASSWORD_PEPPER не задан ни в .env, ни в config');
-    process.exit(1);
+    logger.warn('Пароли будут менее защищены');
 }
 
 // Создаём экземпляр Express
@@ -124,13 +135,6 @@ const dbConfig = {
     database: config.db.database,
 };
 
-const pool = mysql.createPool({
-    ...dbConfig,
-    waitForConnections: true,
-    connectionLimit: 10, // подберите под ожидаемую нагрузку
-    queueLimit: 0,
-});
-
 // ================================================================
 // Конфигурация окружения (порт и хост)
 // ================================================================
@@ -150,6 +154,13 @@ app.use(session({
         sameSite: 'lax', // безопаснее для навигации
     }
 }));
+
+// ================================================================
+// Вспомогательная функция получения IP клиента
+// ================================================================
+const getClientIp = (req) => {
+    return req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+};
 
 // ================================================================
 // Функция уведомления об утечке данных (заглушка, пишет в консоль)
@@ -215,18 +226,22 @@ function isAuthenticated(req, res, next) {
 }
 
 function isAdmin(req, res, next) {
-    if (req.session.userId && req.session.userRole === 'admin') {
+    if (req.session.userId && req.session.userRole === 'admin' && req.session.userEmail === process.env.ADMIN_EMAIL) {
         return next();
     }
+    logger.warn(`Попытка доступа к админке без прав: ${req.session.userEmail || 'anon'}, IP: ${req.ip}`);
     res.status(403).send('Доступ запрещён');
 }
 
-// ================================================================
-// Вспомогательная функция получения IP клиента
-// ================================================================
-const getClientIp = (req) => {
-    return req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+const apiKeyAuth = (req, res, next) => {
+    const key = req.headers['x-api-key'];
+    if (!key || key !== process.env.API_KEY) {
+        return res.status(403).json({ error: 'Неверный API-ключ' });
+    }
+    next();
 };
+
+app.use('/admin', adminRoutes);
 
 // ================================================================
 // МАРШРУТЫ
@@ -712,4 +727,3 @@ if (require.main === module) {
 }
 
 module.exports = app;
-module.exports.pool = pool;
