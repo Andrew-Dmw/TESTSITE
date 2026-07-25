@@ -56,6 +56,14 @@ services:
       PORT: ${PORT:-3000}
       SESSION_SECRET: ${SESSION_SECRET}
       PASSWORD_PEPPER: ${PASSWORD_PEPPER}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_SECURE: ${SMTP_SECURE}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      API_KEY: ${API_KEY}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASS: ${ADMIN_PASS}
     # ports не публикуем – доступ только через Nginx
     networks:
       - app_network
