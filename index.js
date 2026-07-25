@@ -8,9 +8,9 @@ const mysql = require('mysql2/promise');
 const validator = require('validator');
 const expressLayouts = require('express-ejs-layouts');
 const path = require('path');
-const Logger = require('./logger');
+const {logger} = require('./logger');
 const session = require('express-session');
-const csurf = require('csurf');
+const csurf = require('@dr.pogodin/csurf');
 const rateLimit = require("express-rate-limit");
 const helmet = require('helmet');
 const cors = require('cors');
@@ -132,14 +132,6 @@ const pool = mysql.createPool({
 });
 
 // ================================================================
-// Инициализация логгера
-// ================================================================
-const logger = new Logger({
-    logDir: './my-logs',
-    level: 'debug'
-});
-
-// ================================================================
 // Конфигурация окружения (порт и хост)
 // ================================================================
 const PORT = config.port;
@@ -170,6 +162,7 @@ async function notifyDataLeak(email, ip, reason) {
         📝 Причина: ${reason}
         ⏰ Время: ${new Date().toISOString()}
     `);
+    logger.warn((`Утечка персональных данных: ${email}, IP: ${getClientIp(req)}`));
     // Здесь можно добавить отправку письма через transporter
 }
 
@@ -217,6 +210,7 @@ function isAuthenticated(req, res, next) {
         return next();
     } else {
         res.status(401).send({ error: 'Необходима авторизация' });
+        
     }
 }
 
@@ -595,6 +589,7 @@ app.post('/register', limiter, async (req, res) => {
         req.session.userId = userId;
         req.session.userEmail = email;
         req.session.userName = name.trim();
+        logger.info(`Зарегистрирован новый пользователь: ${email}, IP: ${getClientIp(req)}`);
 
         connection.release();
         return res.redirect('/main'); // хотя это JSON-ответ, лучше вернуть JSON с редиректом
@@ -625,6 +620,7 @@ app.post('/login', limiter, async (req, res) => {
         );
         if (users.length === 0) {
             connection.release();
+            logger.warn(`Неудачный вход: ${email}, IP: ${getClientIp(req)}, причина: неверный пароль/email`);
             return res.status(401).json({ error: 'Неверный email или пароль' });
         }
         const user = users[0];
@@ -632,6 +628,7 @@ app.post('/login', limiter, async (req, res) => {
         const isValid = await bcrypt.compare(pepperedPassword, user.password_hash);
         if (!isValid) {
             connection.release();
+            logger.warn(`Неудачный вход: ${email}, IP: ${getClientIp(req)}, причина: неверный пароль/email`);
             return res.status(401).json({ error: 'Неверный email или пароль' });
         }
 
@@ -640,6 +637,7 @@ app.post('/login', limiter, async (req, res) => {
         req.session.userEmail = user.email;
         req.session.userName = user.name;
         connection.release();
+        logger.info(`Успешный вход: ${email}, IP: ${getClientIp(req)}, роль: ${user.role}`);
         return res.redirect('/main'); // аналогично регистрации, лучше вернуть JSON с URL
     } catch (error) {
         if (connection) connection.release();
