@@ -3,28 +3,27 @@
 // ================================================================
 const config = require('./config');
 const express = require('express');
-const bodyParser = require('body-parser');
-const mysql = require('mysql2/promise');
-const validator = require('validator');
 const expressLayouts = require('express-ejs-layouts');
 const path = require('path');
-const {logger} = require('./logger');
+const { logger } = require('./logger');
 const session = require('express-session');
 const csurf = require('@dr.pogodin/csurf');
-const rateLimit = require("express-rate-limit");
+const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
 const cookieParser = require('cookie-parser');
 const nodemailer = require('nodemailer');
-const adminRoutes = require('./routes/admin');
 const pool = require('./db');
 
-// ================================================================
-// Конфигурация Nodemailer (для отправки уведомлений)
-// Использует переменные окружения SMTP_*
-// ================================================================
+// Импорт роутеров
+const adminRoutes = require('./routes/admin');
+const publicRoutes = require('./routes/public');
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
 
+// ================================================================
+// Конфигурация Nodemailer
+// ================================================================
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT),
@@ -38,15 +37,14 @@ const transporter = nodemailer.createTransport({
 transporter.verify((error, success) => {
     if (error) {
         console.error('❌ SMTP не работает:', error.message);
-        logger.warn("Письма не будут доставляться пользователям")
+        logger.warn('Письма не будут доставляться пользователям');
     } else {
         console.log('✅ SMTP настроен, письма летают!');
     }
 });
 
 // ================================================================
-// Pepper – секретная добавка к паролю перед хешированием
-// Берём из process.env или config, чтобы не зависеть от одного источника
+// Pepper
 // ================================================================
 const pepper = process.env.PASSWORD_PEPPER || config.pepper;
 if (!pepper) {
@@ -54,37 +52,29 @@ if (!pepper) {
     logger.warn('Пароли будут менее защищены');
 }
 
-// Создаём экземпляр Express
+// ================================================================
+// Экземпляр Express
+// ================================================================
 const app = express();
+const PORT = config.port;
 
 // ================================================================
-// Базовая настройка CORS
-// Указываем конкретный origin для безопасности, credentials – для кук
+// Middleware
 // ================================================================
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000', // если фронтенд на другом домене
-    credentials: true, // разрешаем передачу кук (сессия)
-    allowedHeaders: ['Content-Type', 'X-CSRF-Token'], // имена заголовков, которые можно слать
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'X-CSRF-Token'],
 }));
 
-// ================================================================
-// Раздача статического каталога .well-known (например, для Let's Encrypt)
-// ================================================================
 app.use('/.well-known', express.static(path.join(__dirname, '.well-known')));
 
-// ================================================================
-// Настройка шаблонизатора EJS + layouts
-// ================================================================
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cookieParser());
 
-// ================================================================
-// Раздача статических файлов (CSS, JS, картинки) с кешированием
-// Для .css и .js отключаем кеш в разработке (no-cache), для остальных долгий кеш
-// ================================================================
 app.use(express.static(path.join(__dirname, 'public'), {
     setHeaders: (res, filePath) => {
         if (filePath.endsWith('.css') || filePath.endsWith('.js') || filePath.endsWith('.html')) {
@@ -95,16 +85,9 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
 }));
 
-// ================================================================
-// Layouts для EJS: оборачивает содержимое в layout.ejs
-// ================================================================
 app.use(expressLayouts);
 app.set('layout', 'layout');
 
-// ================================================================
-// CSP через Helmet (исправлено)
-// Убрали 'unsafe-inline' из scriptSrc, исправили styleSrc, добавили нужные шрифты
-// ================================================================
 app.use(
     helmet.contentSecurityPolicy({
         directives: {
@@ -121,91 +104,28 @@ app.use(
     })
 );
 
-// Доверяем первому прокси (нужно для корректного IP за балансировщиком)
 app.set('trust proxy', 1);
 
-// ================================================================
-// Настройка пула соединений к БД (было создание нового соединения на каждый запрос)
-// Используем pool для переиспользования соединений
-// ================================================================
-const dbConfig = {
-    host: config.db.host,
-    user: config.db.user,
-    password: config.db.password,
-    database: config.db.database,
-};
-
-// ================================================================
-// Конфигурация окружения (порт и хост)
-// ================================================================
-const PORT = config.port;
-const HOSTNAME = config.HOSTNAME;
-
-// ================================================================
-// Сессии (исправлено: secure зависит от окружения, sameSite: 'lax')
-// ================================================================
+// Сессии
 app.use(session({
     secret: config.sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: process.env.NODE_ENV === 'production', // true только при HTTPS
+        secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        sameSite: 'lax', // безопаснее для навигации
+        sameSite: 'lax',
     }
 }));
 
-// ================================================================
-// Вспомогательная функция получения IP клиента
-// ================================================================
-const getClientIp = (req) => {
-    return req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-};
-
-// ================================================================
-// Функция уведомления об утечке данных (заглушка, пишет в консоль)
-// В реальном проекте здесь может быть отправка email администратору
-// ================================================================
-async function notifyDataLeak(email, ip, reason) {
-    console.log(`\n🚨 [УТЕЧКА ПДн] Обнаружена подозрительная активность:
-        👤 Пользователь: ${email}
-        🌐 IP-адрес: ${ip}
-        📝 Причина: ${reason}
-        ⏰ Время: ${new Date().toISOString()}
-    `);
-    logger.warn((`Утечка персональных данных: ${email}, IP: ${getClientIp(req)}`));
-    // Здесь можно добавить отправку письма через transporter
-}
-
-// ================================================================
-// Rate limiting (ограничение количества запросов)
-// В тестовой среде лимит выше, чтобы не мешать тестам
-// ================================================================
-const maxRequests = process.env.RATE_LIMIT_MAX
-    ? parseInt(process.env.RATE_LIMIT_MAX)
-    : (process.env.NODE_ENV === 'test' ? 10000 : 100);
-
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 минут
-    max: maxRequests,
-    message: "Слишком много запросов..."
-});
-
-/*
-CSRF-защита (исправлено)
-CSRF-защита: применяется ко всем не-JSON запросам
-*/
-const csrfProtection = csurf({ cookie: true });  // ← cookie: true
-
-// Применяем csurf только к не‑JSON запросам
+// CSRF
+const csrfProtection = csurf({ cookie: true });
 app.use((req, res, next) => {
     if (req.is('application/json')) {
         return next();
     }
     csrfProtection(req, res, next);
 });
-
-// Добавляет токен в шаблоны для всех не‑JSON запросов
 app.use((req, res, next) => {
     if (!req.is('application/json')) {
         res.locals.csrfToken = req.csrfToken();
@@ -214,467 +134,17 @@ app.use((req, res, next) => {
 });
 
 // ================================================================
-// Middleware для проверки авторизации и ролей
+// Подключение маршрутов
 // ================================================================
-function isAuthenticated(req, res, next) {
-    if (req.session.userId) {
-        return next();
-    } else {
-        res.status(401).send({ error: 'Необходима авторизация' });
-        
-    }
-}
-
-function isAdmin(req, res, next) {
-    if (req.session.userId && req.session.userRole === 'admin' && req.session.userEmail === process.env.ADMIN_EMAIL) {
-        return next();
-    }
-    logger.warn(`Попытка доступа к админке без прав: ${req.session.userEmail || 'anon'}, IP: ${req.ip}`);
-    res.status(403).send('Доступ запрещён');
-}
-
-const apiKeyAuth = (req, res, next) => {
-    const key = req.headers['x-api-key'];
-    if (!key || key !== process.env.API_KEY) {
-        return res.status(403).json({ error: 'Неверный API-ключ' });
-    }
-    next();
-};
-
+app.use('/', publicRoutes);
+app.use('/', authRoutes);
+app.use('/', userRoutes);
 app.use('/admin', adminRoutes);
 
 // ================================================================
-// МАРШРУТЫ
+// Обработчики ошибок
 // ================================================================
-
-// Главная страница (форма авторизации)
-app.get('/', (req, res) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.render('index', {
-        title: 'Авторизация',
-        csrfToken: res.locals.csrfToken,
-        layout: false,
-    });
-});
-
-// Политика конфиденциальности
-app.get('/privacy', (req, res) => {
-    res.render('privacy', { 
-        title: 'Политика конфиденциальности',
-        layout: false
-    });
-});
-
-// Главная страница после входа
-app.get('/main', isAuthenticated, (req, res) => {
-    const cookieConsent = req.cookies?.cookie_consent;
-    const showCookieBanner = !cookieConsent;
-    res.render('main', {
-        title: 'Главная',
-        layout: false,
-        csrfToken: res.locals.csrfToken,
-        user: {
-            name: req.session.userName,
-            email: req.session.userEmail,
-            role: req.session.userRole
-        },
-        showCookieBanner: showCookieBanner
-    });
-});
-
-// Страница юридической модели (ER)
-app.get('/ER', isAuthenticated, (req, res) => {
-    res.render('ER', {
-        title: "Формально-юридическая модель",
-        layout: false,
-        user: req.session.userId ? {
-            email: req.session.userEmail,
-            name: req.session.userName,
-            role: req.session.userRole
-        } : null
-    });
-});
-
-// Профиль пользователя
-app.get('/profile', isAuthenticated, (req, res) => {
-    res.render('profile', {
-        title: 'Профиль пользователя',
-        csrfToken: res.locals.csrfToken,
-        layout: false,
-        user: {
-            id: req.session.userId,
-            name: req.session.userName,
-            email: req.session.userEmail,
-            role: req.session.userRole
-        }
-    });
-});
-
-// Журнал инцидентов (только для админа)
-app.get('/admin/incidents', isAuthenticated, isAdmin, async (req, res) => {
-    let connection;
-    try {
-        connection = await pool.getConnection();
-        const [incidents] = await connection.execute(
-            'SELECT * FROM security_incident_logs ORDER BY detection_time DESC'
-        );
-        connection.release();
-        res.render('admin_incidents', {
-            title: 'Журнал инцидентов безопасности',
-            layout: false,
-            incidents,
-            csrfToken: res.locals.csrfToken
-        });
-    } catch (err) {
-        if (connection) connection.release();
-        console.error(err);
-        res.status(500).send('Ошибка загрузки инцидентов');
-    }
-});
-
-// Логирование согласия на куки (исправлено: теперь сохраняет в БД)
-app.post('/log-cookie-consent', limiter, express.json(), isAuthenticated, async (req, res) => {
-    const { consent } = req.body;
-    const email = req.session.userEmail;
-    const ip = getClientIp(req);
-    const ua = req.headers['user-agent'] || '';
-    logger.info(`Cookie consent: ${consent}, user: ${email}, IP: ${ip}`);
-
-    let connection;
-    try {
-        connection = await pool.getConnection();
-        await connection.execute(
-            'INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
-            [email, 'cookie_consent', `Consent: ${consent}`, ip, ua]
-        );
-        connection.release();
-        res.status(200).json({ status: 'logged' });
-    } catch (err) {
-        if (connection) connection.release();
-        logger.error('Error logging cookie consent: ' + err.message);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Сохранение отзыва (форма)
-app.post('/save-data', limiter, isAuthenticated, async (req, res) => {
-    // Honeypot-проверка (боты заполнят скрытое поле)
-    if (req.body.honeypot) {
-        logger.warn('Honeypot triggered on /save-data, IP: ' + getClientIp(req));
-        return res.status(400).json({ error: "Invalid request" }); // не выдаём "Bot detected"
-    }
-    try {
-        const { Z, Like, COMMENT, dateTime } = req.body;
-        // Валидация и экранирование
-        const validatedZ = Z ? validator.escape(Z) : null;
-        const validatedLike = Like ? validator.escape(Like) : null;
-        const validatedCOMMENT = COMMENT ? validator.escape(COMMENT) : null;
-        const validatedDateTime = dateTime ? validator.escape(dateTime) : null;
-
-        const connection = await pool.getConnection();
-        await connection.execute(
-            'INSERT INTO reviews (date_time, liked_website, favorite_section, comment) VALUES (?, ?, ?, ?)',
-            [validatedDateTime, validatedZ, validatedLike, validatedCOMMENT]
-        );
-        connection.release();
-        res.redirect('/thank-you');
-    } catch (error) {
-        console.error('Error saving to database:', error);
-        logger.error(`Database error: ${error.message}`);
-        res.status(500).redirect('/Server-error');
-    }
-});
-
-// Отзыв согласий на обработку ПДн
-app.post('/revoke-consent', limiter, isAuthenticated, async (req, res) => {
-    const email = req.session.userEmail;
-    if (!email || !validator.isEmail(email)) {
-        return res.status(400).send('Некорректный email в сессии');
-    }
-    if (req.body.honeypot) {
-        logger.warn('Honeypot triggered on /revoke-consent, IP: ' + getClientIp(req));
-        return res.status(400).json({ error: "Invalid request" });
-    }
-    let connection;
-    try {
-        connection = await pool.getConnection();
-        const [users] = await connection.execute('SELECT id FROM users WHERE email = ?', [email]);
-        if (users.length === 0) {
-            connection.release();
-            return res.status(404).send('Пользователь с таким email не найден.');
-        }
-        const userId = users[0].id;
-        await connection.execute(
-            'UPDATE consents SET is_active = FALSE, revoked_at = NOW() WHERE user_id = ? AND is_active = TRUE',
-            [userId]
-        );
-        const ip = getClientIp(req) || '';
-        const ua = req.headers['user-agent'] || '';
-        await connection.execute(
-            'INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
-            [email, 'consent_revoked', 'Отзыв всех согласий', ip, ua]
-        );
-        connection.release();
-        res.redirect('/ER');
-    } catch (error) {
-        if (connection) connection.release();
-        console.error(error);
-        res.status(500).redirect('/Server-error');
-    }
-});
-
-// Удаление персональных данных
-app.post('/delete-data', limiter, isAuthenticated, async (req, res) => {
-    const email = req.session.userEmail;
-    if (!email || !validator.isEmail(email)) {
-        return res.status(400).send('Некорректный email в сессии');
-    }
-    if (req.body.honeypot) {
-        logger.warn('Honeypot triggered on /delete-data, IP: ' + getClientIp(req));
-        return res.status(400).json({ error: "Invalid request" });
-    }
-    let connection;
-    try {
-        connection = await pool.getConnection();
-        const [users] = await connection.execute('SELECT id FROM users WHERE email = ?', [email]);
-        if (users.length === 0) {
-            connection.release();
-            return res.status(404).send('Пользователь не найден.');
-        }
-        const userId = users[0].id;
-        await connection.execute('DELETE FROM user_data WHERE user_id = ?', [userId]);
-        const ip = getClientIp(req) || '';
-        const ua = req.headers['user-agent'] || '';
-        await connection.execute(
-            'INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
-            [email, 'data_deleted', 'Персональные данные удалены', ip, ua]
-        );
-        connection.release();
-        res.redirect('/ER');
-    } catch (error) {
-        if (connection) connection.release();
-        console.error(error);
-        res.status(500).redirect('/Server-error');
-    }
-});
-
-// Экспорт данных пользователя (исправлено: блокировка при подозрительной активности)
-app.get('/export-data', limiter, isAuthenticated, async (req, res) => {
-    const email = req.session.userEmail;
-    if (!email || !validator.isEmail(email)) {
-        return res.status(400).send('Некорректный email в сессии');
-    }
-
-    let connection;
-    try {
-        connection = await pool.getConnection();
-        const ip = getClientIp(req);
-
-        // Проверка на подозрительную активность (частые экспорты)
-        const [rows] = await connection.execute(
-            `SELECT COUNT(*) as cnt FROM event_logs 
-             WHERE action = 'data_exported' AND ip_address = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE)`,
-            [ip]
-        );
-
-        if (rows[0].cnt >= 3) {
-            // Запись инцидента
-            await connection.execute(
-                `INSERT INTO security_incident_logs (incident_time, description, status, user_email, ip_address)
-                 VALUES (NOW(), ?, 'detected', ?, ?)`,
-                [`Частые экспорты данных (${rows[0].cnt} за минуту) с IP ${ip}`, email, ip]
-            );
-            await notifyDataLeak(email, ip, `С IP ${ip} выполнено ${rows[0].cnt} экспортов за 1 минуту`);
-            connection.release();
-            // Блокируем дальнейший экспорт
-            return res.status(429).json({ error: 'Превышен лимит запросов на экспорт данных' });
-        }
-
-        // Если всё нормально, продолжаем экспорт
-        const [users] = await connection.execute('SELECT id, name, email, created_at FROM users WHERE email = ?', [email]);
-        if (users.length === 0) {
-            connection.release();
-            return res.status(404).send('Пользователь не найден.');
-        }
-        const user = users[0];
-        const [dataRows] = await connection.execute('SELECT field_name, field_value FROM user_data WHERE user_id = ?', [user.id]);
-        const [consents] = await connection.execute(
-            'SELECT purpose, is_active, given_at, revoked_at FROM consents WHERE user_id = ?',
-            [user.id]
-        );
-
-        const exportData = {
-            user: { id: user.id, name: user.name, email: user.email, registered_at: user.created_at },
-            custom_fields: dataRows,
-            consents_history: consents,
-            export_date: new Date().toISOString(),
-            legal_notice: 'Данные предоставлены в соответствии со ст. 14 ФЗ-152 "О персональных данных"'
-        };
-
-        // Логируем факт экспорта
-        const ipLog = ip || '';
-        const ua = req.headers['user-agent'] || '';
-        await connection.execute(
-            'INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
-            [email, 'data_exported', 'Скачана копия ПДн', ipLog, ua]
-        );
-        connection.release();
-
-        res.setHeader('Content-disposition', `attachment; filename=personal_data_${email}.json`);
-        res.setHeader('Content-type', 'application/json');
-        res.send(JSON.stringify(exportData, null, 2));
-    } catch (error) {
-        if (connection) connection.release();
-        console.error(error);
-        res.status(500).redirect('/Server-error');
-    }
-});
-
-// Обратная связь (JSON-эндпоинт)
-app.post('/submit-feedback', limiter, express.json(), isAuthenticated, async (req, res) => {
-    const { feedback } = req.body;
-    if (!feedback || typeof feedback !== 'string' || feedback.trim() === '') {
-        return res.status(400).json({ error: "No feedback provided" });
-    }
-    if (req.body.honeypot) {
-        logger.warn('Honeypot triggered on /submit-feedback, IP: ' + getClientIp(req));
-        return res.status(400).json({ error: "Invalid request" });
-    }
-    try {
-        const connection = await pool.getConnection();
-        const [result] = await connection.execute('INSERT INTO feedback (feedback) VALUES (?)', [feedback.trim()]);
-        connection.release();
-        console.log(`Фидбек сохранён, ID = ${result.insertId}`);
-        res.status(200).json({ message: "Feedback saved", id: result.insertId });
-    } catch (error) {
-        console.error("Ошибка БД при сохранении фидбека:", error);
-        res.status(500).json({ error: "Database error" });
-    }
-});
-
-// Регистрация пользователя
-app.post('/register', limiter, async (req, res) => {
-    const { email, name, password, privacyConsent } = req.body;
-    if (!email || !validator.isEmail(email)) {
-        return res.status(400).json({ error: 'Некорректный email' });
-    }
-    if (!name || name.trim().length < 2) {
-        return res.status(400).json({ error: 'Имя должно быть не менее 2 символов' });
-    }
-    if (!password || password.length < 8) {
-        return res.status(400).json({ error: 'Пароль должен быть не менее 8 символов' });
-    }
-
-    if (!privacyConsent) {
-        return res.status(400).json({ error: 'Необходимо согласие с политикой конфиденциальности' });
-    }
-    if (req.body.honeypot) {
-        logger.warn('Honeypot triggered on /register, IP: ' + getClientIp(req));
-        return res.status(400).json({ error: "Invalid request" });
-    }
-
-    let connection;
-    try {
-        connection = await pool.getConnection();
-        const [existing] = await connection.execute('SELECT id FROM users WHERE email = ?', [email]);
-        if (existing.length > 0) {
-            connection.release();
-            return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
-        }
-
-        // Хеширование пароля с пиппером
-        const pepperedPassword = password + pepper;
-        const saltRounds = 10;
-        const passwordHash = await bcrypt.hash(pepperedPassword, saltRounds);
-
-        const [result] = await connection.execute(
-            'INSERT INTO users (email, name, password_hash, privacy_consent_given, privacy_consent_date) VALUES (?, ?, ?, ?, NOW())',
-            [email, name.trim(), passwordHash, true]
-        );
-        const userId = result.insertId;
-
-        // Запись согласия
-        await connection.execute(
-            'INSERT INTO consents (user_id, purpose, version, is_active, given_at, ip_address, user_agent) VALUES (?, ?, ?, ?, NOW(), ?, ?)',
-            [userId, 'privacy_policy', 'v1.0', true, getClientIp(req), req.headers['user-agent'] || '']
-        );
-
-        // Сразу авторизуем пользователя
-        req.session.userRole = 'user';
-        req.session.userId = userId;
-        req.session.userEmail = email;
-        req.session.userName = name.trim();
-        logger.info(`Зарегистрирован новый пользователь: ${email}, IP: ${getClientIp(req)}`);
-
-        connection.release();
-        return res.redirect('/main'); // хотя это JSON-ответ, лучше вернуть JSON с редиректом
-    } catch (error) {
-        if (connection) connection.release();
-        console.error(error);
-        return res.status(500).send({ error: 'Ошибка сервера' });
-    }
-});
-
-// Вход пользователя (JSON)
-app.post('/login', limiter, async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email и пароль обязательны' });
-    }
-    if (req.body.honeypot) {
-        logger.warn('Honeypot triggered on /login, IP: ' + getClientIp(req));
-        return res.status(400).json({ error: "Invalid request" });
-    }
-    let connection;
-    try {
-        connection = await pool.getConnection();
-        // Получаем пользователя вместе с ролью (поле role добавлено в SELECT)
-        const [users] = await connection.execute(
-            'SELECT id, email, name, password_hash, role FROM users WHERE email = ?',
-            [email]
-        );
-        if (users.length === 0) {
-            connection.release();
-            logger.warn(`Неудачный вход: ${email}, IP: ${getClientIp(req)}, причина: неверный пароль/email`);
-            return res.status(401).json({ error: 'Неверный email или пароль' });
-        }
-        const user = users[0];
-        const pepperedPassword = password + pepper;
-        const isValid = await bcrypt.compare(pepperedPassword, user.password_hash);
-        if (!isValid) {
-            connection.release();
-            logger.warn(`Неудачный вход: ${email}, IP: ${getClientIp(req)}, причина: неверный пароль/email`);
-            return res.status(401).json({ error: 'Неверный email или пароль' });
-        }
-
-        req.session.userRole = user.role;
-        req.session.userId = user.id;
-        req.session.userEmail = user.email;
-        req.session.userName = user.name;
-        connection.release();
-        logger.info(`Успешный вход: ${email}, IP: ${getClientIp(req)}, роль: ${user.role}`);
-        return res.redirect('/main'); // аналогично регистрации, лучше вернуть JSON с URL
-    } catch (error) {
-        if (connection) connection.release();
-        console.error('Login error:', error); 
-        console.error(error);
-        return res.status(500).json({ error: 'Ошибка сервера' });
-    }
-});
-
-// Страница благодарности после отправки отзыва
-app.get('/thank-you', (req, res) => {
-    res.render('thank-you', { title: 'Спасибо за ваш отзыв!', redirectUrl: '/main', layout: false });
-});
-
-// Страница 500 (внутренняя ошибка сервера)
-app.get('/Server-error', (req, res) => {
-    res.status(500).render('500', { title: "Внутренняя ошибка сервера" });
-});
-
-// ================================================================
-// Обработчик ошибок CSRF (если где-то всё же промахнулись)
-// ================================================================
+// CSRF
 app.use((err, req, res, next) => {
     if (err.code === 'EBADCSRFTOKEN') {
         res.status(403).send('Form tampered with');
@@ -683,25 +153,21 @@ app.use((err, req, res, next) => {
     }
 });
 
-// ================================================================
-// Логирование всех запросов (после всех маршрутов, чтобы не дублироваться)
-// ================================================================
+// 404
+app.use((req, res) => {
+    res.status(404).render('404', { title: 'Страница не найдена' });
+});
+
+// Логирование всех запросов (после маршрутов)
 app.use((req, res, next) => {
     logger.info(`${req.method} ${req.url}`);
     next();
 });
 
-// Обработчик необработанных ошибок
+// Общий обработчик ошибок
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
-});
-
-// ================================================================
-// Обработчик 404 – страница не найдена
-// ================================================================
-app.use((req, res, next) => {
-    res.status(404).render('404', { title: 'Страница не найдена' });
 });
 
 // ================================================================
@@ -721,7 +187,6 @@ const start = () => {
     }
 };
 
-// Запускаем, только если файл запущен напрямую (не импортирован для тестов)
 if (require.main === module) {
     start();
 }
