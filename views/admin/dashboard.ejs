@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="card">
+    <h1>⚙️ <%= title %></h1>
+    <p style="color: #aaa;">Редактируй только те поля, которые помечены как <span class="secret">●</span> секретные.</p>
+
+    <div id="env-table-wrap">
+        <table>
+            <thead><tr><th>Ключ</th><th>Значение</th><th>Статус</th></tr></thead>
+            <tbody id="env-body"></tbody>
+        </table>
+    </div>
+
+    <button class="btn" onclick="saveEnv()">💾 Сохранить изменения</button>
+    <span id="status" class="status"></span>
+
+    <div class="test-area">
+        <h3>📧 Тест SMTP</h3>
+        <input type="email" id="test-email" placeholder="Введите email для теста">
+        <button class="btn" onclick="testEmail()">Отправить тестовое письмо</button>
+        <span id="test-status" class="status"></span>
+    </div>
+
+    <br>
+    <a href="/admin/incidents">📋 Журнал инцидентов</a>
+</div>
+
+<script src="/js/admin.js"></script>
+</body>
+</html>
