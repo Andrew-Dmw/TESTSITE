@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/landing.css">
+    <link rel="icon" href="/images/favicon/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-mark">⚖</span>
+                <span class="logo-text">Юрист в Усть-Куте</span>
+            </a>
+            <nav class="main-nav">
+                <a href="/">Главная</a>
+                <a href="/services">Услуги</a>
+                <a href="/about">Обо мне</a>
+                <a href="/contacts" class="active">Контакты</a>
+                <a href="/ER">Демо-модель</a>
+                <% if (user) { %>
+                    <a href="/profile" class="btn-nav">Личный кабинет</a>
+                <% } else { %>
+                    <a href="/login" class="btn-nav">Войти</a>
+                <% } %>
+            </nav>
+        </div>
+    </header>
+
+    <section class="page-head">
+        <div class="container">
+            <h1>Контакты</h1>
+            <p>Свяжитесь со мной удобным способом</p>
+        </div>
+    </section>
+
+    <section class="contacts-content">
+        <div class="container">
+            <div class="contacts-grid">
+                <div class="contact-card">
+                    <h3>📞 Телефон</h3>
+                    <p><a href="tel:+79246193473">+7 (924) 619-34-73</a></p>
+                    <p class="muted">Звонки принимаю с 9:00 до 20:00</p>
+                </div>
+                <div class="contact-card">
+                    <h3>✉ Email</h3>
+                    <p><a href="mailto:dmitrievandreu.law@mail.ru">dmitrievandreu.law@mail.ru</a></p>
+                    <p class="muted">Отвечаю в течение рабочего дня</p>
+                </div>
+                <div class="contact-card">
+                    <h3>💬 Telegram</h3>
+                    <p>По номеру телефона</p>
+                    <p class="muted">Самый быстрый способ связи</p>
+                </div>
+                <div class="contact-card">
+                    <h3>📍 Город</h3>
+                    <p>г. Усть-Кут, Иркутская область</p>
+                    <p class="muted">Встречи по договорённости</p>
+                </div>
+            </div>
+
+            <div class="cta-block">
+                <p>Не откладывайте — опишите ситуацию, и я подскажу, что делать.</p>
+                <a href="/#lead-form" class="btn btn-primary">Оставить заявку</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div class="footer-col">
+                <strong>ИП Дмитриев Андрей Константинович</strong>
+                <p>Юридические услуги в г. Усть-Кут</p>
+            </div>
+            <div class="footer-col">
+                <strong>Контакты</strong>
+                <p><a href="tel:+79246193473">+7 (924) 619-34-73</a></p>
+                <p><a href="mailto:dmitrievandreu.law@mail.ru">dmitrievandreu.law@mail.ru</a></p>
+            </div>
+            <div class="footer-col">
+                <strong>Документы</strong>
+                <p><a href="/privacy">Политика конфиденциальности</a></p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 ИП Дмитриев А.К. Все права защищены.</p>
+        </div>
+    </footer>
+</body>
+</html>

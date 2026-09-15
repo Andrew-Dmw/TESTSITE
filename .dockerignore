@@ -1,4 +1,11 @@
 node_modules
+npm-debug.log
 .env
-черновик
+.git
+.gitignore
 my-logs
+.log
+.DS_Store
+coverage
+_test_
+.github

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <title><%= title %></title>
+    <link rel="icon" href="/images/favicon/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-layout">
+
+    <!-- Сайдбар -->
+    <aside class="admin-sidebar">
+        <div class="admin-logo">
+            <span class="admin-logo-mark">⚖</span>
+            <span>Админ-панель</span>
+        </div>
+
+        <nav class="admin-nav">
+            <div class="admin-nav-section">Обзор</div>
+            <a href="/admin" class="active">
+                <span class="admin-nav-icon">📊</span> Дашборд
+            </a>
+
+            <div class="admin-nav-section">Работа</div>
+            <a href="/admin/leads">
+                <span class="admin-nav-icon">📥</span> Заявки
+                <% if (stats.leadsNew > 0) { %>
+                    <span class="admin-nav-badge"><%= stats.leadsNew %></span>
+                <% } %>
+            </a>
+            <a href="/admin/users">
+                <span class="admin-nav-icon">👥</span> Пользователи
+            </a>
+
+            <div class="admin-nav-section">Безопасность</div>
+            <a href="/admin/incidents">
+                <span class="admin-nav-icon">⚠️</span> Инциденты
+                <% if (stats.incidentsDetected > 0) { %>
+                    <span class="admin-nav-badge"><%= stats.incidentsDetected %></span>
+                <% } %>
+            </a>
+
+            <div class="admin-nav-section">На сайт</div>
+            <a href="/">
+                <span class="admin-nav-icon">🏠</span> Главная
+            </a>
+            <a href="/main">
+                <span class="admin-nav-icon">👤</span> Личный кабинет
+            </a>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+            <span class="admin-user-name"><%= user.name %></span>
+            <span class="admin-user-email"><%= user.email %></span>
+            <form action="/logout" method="post">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="admin-logout">Выйти</button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Основной контент -->
+    <main class="admin-main">
+
+        <div class="admin-header">
+            <h1>Дашборд</h1>
+            <p>Обзор работы сайта</p>
+        </div>
+
+        <!-- Статистика -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label">Всего заявок</span>
+                <span class="stat-value blue"><%= stats.leadsTotal %></span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Новых заявок</span>
+                <span class="stat-value gold"><%= stats.leadsNew %></span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Пользователей</span>
+                <span class="stat-value blue"><%= stats.usersTotal %></span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Инцидентов</span>
+                <span class="stat-value red"><%= stats.incidentsTotal %></span>
+            </div>
+        </div>
+
+        <!-- Последние заявки -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h2>Последние заявки</h2>
+                <a href="/admin/leads" class="btn-mini primary">Все заявки →</a>
+            </div>
+            <div class="admin-card-body no-pad">
+                <% if (recentLeads.length === 0) { %>
+                    <table class="admin-table">
+                        <tr class="empty-row"><td>Пока нет заявок</td></tr>
+                    </table>
+                <% } else { %>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Имя</th>
+                                <th>Контакт</th>
+                                <th>Статус</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% recentLeads.forEach(lead => { %>
+                                <tr>
+                                    <td class="cell-mono">#<%= lead.id %></td>
+                                    <td><%= lead.name %></td>
+                                    <td class="cell-contact"><%= lead.contact %></td>
+                                    <td><span class="badge badge-<%= lead.status %>"><%= lead.status %></span></td>
+                                    <td class="cell-muted"><%= new Date(lead.created_at).toLocaleString('ru-RU') %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Последние инциденты -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h2>Последние инциденты безопасности</h2>
+                <a href="/admin/incidents" class="btn-mini primary">Все инциденты →</a>
+            </div>
+            <div class="admin-card-body no-pad">
+                <% if (recentIncidents.length === 0) { %>
+                    <table class="admin-table">
+                        <tr class="empty-row"><td>Инцидентов нет — это хороший знак</td></tr>
+                    </table>
+                <% } else { %>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Описание</th>
+                                <th>IP</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% recentIncidents.forEach(inc => { %>
+                                <tr>
+                                    <td class="cell-muted"><%= new Date(inc.incident_time).toLocaleString('ru-RU') %></td>
+                                    <td class="cell-message"><%= inc.description %></td>
+                                    <td class="cell-mono"><%= inc.ip_address || '—' %></td>
+                                    <td><span class="badge badge-<%= inc.status %>"><%= inc.status %></span></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                <% } %>
+            </div>
+        </div>
+
+    </main>
+</div>
+</body>
+</html>

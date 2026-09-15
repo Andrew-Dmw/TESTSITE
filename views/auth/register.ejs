@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <title>Регистрация — Юрист в Усть-Куте</title>
+    <link rel="stylesheet" href="/css/auth.css">
+    <link rel="icon" href="/images/favicon/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="form-box register-box standalone">
+            <h2>Регистрация</h2>
+            <p class="subhead">Создайте личный кабинет для работы с заявками</p>
+
+            <form id="registerForm" novalidate>
+                <div class="input-group">
+                    <input type="text" name="name" placeholder="Ваше имя"
+                           required minlength="2" maxlength="60" autocomplete="name">
+                </div>
+                <div class="input-group">
+                    <input type="email" name="email" placeholder="Email"
+                           required autocomplete="email" maxlength="254">
+                </div>
+                <div class="input-group">
+                    <input type="password" name="password"
+                           placeholder="Пароль (минимум 8 символов)"
+                           required minlength="8" autocomplete="new-password">
+                </div>
+
+                <div class="consent-group">
+                    <label>
+                        <input type="checkbox" name="privacyConsent" required>
+                        <span>Я согласен с <a href="/privacy" target="_blank" rel="noopener">политикой конфиденциальности</a></span>
+                    </label>
+                </div>
+
+                <input type="text" name="honeypot" class="honeypot"
+                       tabindex="-1" autocomplete="off" aria-hidden="true">
+
+                <button type="submit" class="btn" id="registerBtn">
+                    <span class="btn-text">Создать аккаунт</span>
+                    <span class="btn-spinner" hidden></span>
+                </button>
+                <div class="message" id="registerMessage" role="alert"></div>
+            </form>
+
+            <p class="toggle-text">
+                Уже есть аккаунт? <a href="/login" class="toggle-link">Войти</a>
+            </p>
+            <p class="toggle-text">
+                <a href="/" class="toggle-link">← На главную</a>
+            </p>
+        </div>
+    </div>
+    <script src="/js/auth.js" defer></script>
+</body>
+</html>

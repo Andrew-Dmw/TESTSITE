@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/admin.css">
+    <link rel="icon" href="/images/favicon/favicon.ico" type="image/x-icon">
+</head>
+<body>
+<div class="admin-layout">
+
+    <aside class="admin-sidebar">
+        <div class="admin-logo">
+            <span class="admin-logo-mark">⚖</span>
+            <span>Админ-панель</span>
+        </div>
+
+        <nav class="admin-nav">
+            <div class="admin-nav-section">Обзор</div>
+            <a href="/admin"><span class="admin-nav-icon">📊</span> Дашборд</a>
+
+            <div class="admin-nav-section">Работа</div>
+            <a href="/admin/leads"><span class="admin-nav-icon">📥</span> Заявки</a>
+            <a href="/admin/users" class="active"><span class="admin-nav-icon">👥</span> Пользователи</a>
+
+            <div class="admin-nav-section">Безопасность</div>
+            <a href="/admin/incidents"><span class="admin-nav-icon">⚠️</span> Инциденты</a>
+
+            <div class="admin-nav-section">На сайт</div>
+            <a href="/"><span class="admin-nav-icon">🏠</span> Главная</a>
+            <a href="/main"><span class="admin-nav-icon">👤</span> Личный кабинет</a>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+            <span class="admin-user-name"><%= user.name %></span>
+            <span class="admin-user-email"><%= user.email %></span>
+            <form action="/logout" method="post">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="admin-logout">Выйти</button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="admin-main">
+
+        <div class="admin-header">
+            <h1>Пользователи</h1>
+            <p>Всего зарегистрировано: <%= users.length %></p>
+        </div>
+
+        <div class="admin-card">
+            <div class="admin-card-body no-pad">
+                <% if (users.length === 0) { %>
+                    <table class="admin-table">
+                        <tr class="empty-row"><td>Пользователей пока нет</td></tr>
+                    </table>
+                <% } else { %>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Имя</th>
+                                <th>Email</th>
+                                <th>Роль</th>
+                                <th>Согласие</th>
+                                <th>Дата регистрации</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% users.forEach(u => { %>
+                                <tr>
+                                    <td class="cell-mono">#<%= u.id %></td>
+                                    <td><%= u.name || '—' %></td>
+                                    <td class="cell-contact"><%= u.email %></td>
+                                    <td><span class="badge badge-<%= u.role %>"><%= u.role %></span></td>
+                                    <td class="cell-muted"><%= u.privacy_consent_given ? '✓' : '—' %></td>
+                                    <td class="cell-muted"><%= new Date(u.created_at).toLocaleString('ru-RU') %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                <% } %>
+            </div>
+        </div>
+
+    </main>
+</div>
+</body>
+</html>

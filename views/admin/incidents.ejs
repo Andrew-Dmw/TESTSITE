@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+<div class="admin-layout">
+
+    <aside class="admin-sidebar">
+        <div class="admin-logo">
+            <span class="admin-logo-mark">⚖</span>
+            <span>Админ-панель</span>
+        </div>
+
+        <nav class="admin-nav">
+            <div class="admin-nav-section">Обзор</div>
+            <a href="/admin"><span class="admin-nav-icon">📊</span> Дашборд</a>
+
+            <div class="admin-nav-section">Работа</div>
+            <a href="/admin/leads"><span class="admin-nav-icon">📥</span> Заявки</a>
+            <a href="/admin/users"><span class="admin-nav-icon">👥</span> Пользователи</a>
+
+            <div class="admin-nav-section">Безопасность</div>
+            <a href="/admin/incidents" class="active">
+                <span class="admin-nav-icon">⚠️</span> Инциденты
+                <% if (counts.detected > 0) { %>
+                    <span class="admin-nav-badge"><%= counts.detected %></span>
+                <% } %>
+            </a>
+
+            <div class="admin-nav-section">На сайт</div>
+            <a href="/"><span class="admin-nav-icon">🏠</span> Главная</a>
+            <a href="/main"><span class="admin-nav-icon">👤</span> Личный кабинет</a>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+            <span class="admin-user-name"><%= user.name %></span>
+            <span class="admin-user-email"><%= user.email %></span>
+            <form action="/logout" method="post">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="admin-logout">Выйти</button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="admin-main">
+
+        <div class="admin-header">
+            <h1>Журнал инцидентов</h1>
+            <p>События безопасности и подозрительная активность (ст. 18.1 152-ФЗ)</p>
+        </div>
+
+        <!-- Статистика -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label">Всего инцидентов</span>
+                <span class="stat-value blue"><%= counts.total %></span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Обнаружено</span>
+                <span class="stat-value red"><%= counts.detected %></span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Расследуется</span>
+                <span class="stat-value gold"><%= counts.investigating %></span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Решено</span>
+                <span class="stat-value"><%= counts.resolved %></span>
+            </div>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="filter-tabs">
+            <a href="/admin/incidents" class="filter-tab <%= currentFilter === 'all' ? 'active' : '' %>">
+                Все <span class="count"><%= counts.total %></span>
+            </a>
+            <a href="/admin/incidents?status=detected" class="filter-tab <%= currentFilter === 'detected' ? 'active' : '' %>">
+                Обнаружено <span class="count"><%= counts.detected %></span>
+            </a>
+            <a href="/admin/incidents?status=investigating" class="filter-tab <%= currentFilter === 'investigating' ? 'active' : '' %>">
+                Расследуется <span class="count"><%= counts.investigating %></span>
+            </a>
+            <a href="/admin/incidents?status=resolved" class="filter-tab <%= currentFilter === 'resolved' ? 'active' : '' %>">
+                Решено <span class="count"><%= counts.resolved %></span>
+            </a>
+        </div>
+
+        <!-- Таблица -->
+        <div class="admin-card">
+            <div class="admin-card-body no-pad">
+                <% if (incidents.length === 0) { %>
+                    <table class="admin-table">
+                        <tr class="empty-row">
+                            <td>
+                                <% if (currentFilter === 'all') { %>
+                                    Инцидентов нет — это хороший знак 🛡️
+                                <% } else { %>
+                                    Инцидентов с таким статусом нет
+                                <% } %>
+                            </td>
+                        </tr>
+                    </table>
+                <% } else { %>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Время инцидента</th>
+                                <th>Обнаружен</th>
+                                <th>Описание</th>
+                                <th>Пользователь</th>
+                                <th>IP-адрес</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% incidents.forEach(inc => { %>
+                                <tr data-incident-id="<%= inc.id %>">
+                                    <td class="cell-mono">#<%= inc.id %></td>
+                                    <td class="cell-muted">
+                                        <%= new Date(inc.incident_time).toLocaleString('ru-RU') %>
+                                    </td>
+                                    <td class="cell-muted">
+                                        <%= inc.detection_time
+                                            ? new Date(inc.detection_time).toLocaleString('ru-RU')
+                                            : '—' %>
+                                    </td>
+                                    <td class="cell-message"><%= inc.description %></td>
+                                    <td class="cell-contact"><%= inc.user_email || '—' %></td>
+                                    <td class="cell-mono"><%= inc.ip_address || '—' %></td>
+                                    <td>
+                                        <span class="badge badge-<%= inc.status %>" data-status-label>
+                                            <%= inc.status === 'detected' ? 'обнаружено'
+                                                : inc.status === 'investigating' ? 'расследуется'
+                                                : 'решено' %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <% if (inc.status === 'detected') { %>
+                                                <button class="btn-mini primary" data-set-status="investigating"
+                                                        title="Взять в работу">
+                                                    🔍 В работу
+                                                </button>
+                                                <button class="btn-mini gold" data-set-status="resolved"
+                                                        title="Закрыть сразу">
+                                                    ✓ Решено
+                                                </button>
+                                            <% } else if (inc.status === 'investigating') { %>
+                                                <button class="btn-mini gold" data-set-status="resolved"
+                                                        title="Отметить как решённый">
+                                                    ✓ Решено
+                                                </button>
+                                            <% } else if (inc.status === 'resolved') { %>
+                                                <button class="btn-mini" data-set-status="detected"
+                                                        title="Переоткрыть инцидент">
+                                                    ↻ Открыть снова
+                                                </button>
+                                            <% } %>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Пояснение -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h2>Что это за раздел</h2>
+            </div>
+            <div class="admin-card-body">
+                <p style="color: #475569; line-height: 1.7; font-size: 0.95rem;">
+                    Здесь фиксируются события безопасности, связанные с персональными данными пользователей.
+                    В соответствии с ч. 3.1 ст. 18.1 ФЗ-152, оператор обязан уведомлять Роскомнадзор
+                    об инцидентах с ПДн в течение <strong>24 часов</strong> с момента обнаружения
+                    и предоставлять результаты расследования в течение <strong>72 часов</strong>.
+                </p>
+                <p style="color: #64748b; line-height: 1.7; font-size: 0.92rem; margin-top: 14px;">
+                    Примеры инцидентов, которые автоматически попадают в журнал:
+                    частые экспорты персональных данных с одного IP, подозрительная активность в аккаунтах,
+                    множественные попытки входа.
+                </p>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="/js/admin-incidents.js"></script>
+</body>
+</html>

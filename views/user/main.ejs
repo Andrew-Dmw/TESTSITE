@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <title>Личный кабинет — Юрист в Усть-Куте</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="icon" href="/images/favicon/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <header class="dash-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-mark">⚖</span>
+                <span class="logo-text">Юрист в Усть-Куте</span>
+            </a>
+            <nav class="dash-nav">
+                <a href="/">Главная</a>
+                <a href="/services">Услуги</a>
+                <a href="/about">Обо мне</a>
+                <a href="/contacts">Контакты</a>
+                <a href="/ER">Демо-модель</a>
+                <% if (user.role === 'admin') { %>
+                    <a href="/admin" class="nav-admin-link">⚙ Админка</a>
+                <% } %>
+            </nav>
+            <div class="user-info">
+                <span class="user-name"><%= user.name %></span>
+                <form action="/logout" method="post" class="logout-form">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="btn-logout">Выйти</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <main class="dash-main">
+        <div class="container">
+            <!-- Приветствие -->
+            <section class="welcome-card">
+                <h1>Здравствуйте, <%= user.name %>!</h1>
+                <p class="welcome-sub">
+                    Это ваш личный кабинет. Здесь вы можете управлять своими заявками
+                    и получить доступ к дополнительным инструментам.
+                </p>
+                <div class="welcome-meta">
+                    <span class="meta-item">
+                        <span class="meta-label">Email:</span>
+                        <span class="meta-value"><%= user.email %></span>
+                    </span>
+                    <span class="meta-item">
+                        <span class="meta-label">Роль:</span>
+                        <span class="meta-value">
+                            <%= user.role === 'admin' ? 'Администратор' : 'Клиент' %>
+                        </span>
+                    </span>
+                </div>
+            </section>
+
+            <!-- ============================================================
+            АДМИН-БЛОК (только для администраторов)
+            ============================================================ -->
+            <% if (user.role === 'admin') { %>
+            <section class="admin-block">
+                <div class="admin-block-header">
+                    <div>
+                        <h2>⚙ Панель администратора</h2>
+                        <p>Быстрый доступ к управлению сайтом</p>
+                    </div>
+                    <a href="/admin" class="admin-block-main-btn">Открыть админку →</a>
+                </div>
+                <div class="admin-block-grid">
+                    <a href="/admin" class="admin-tile">
+                        <span class="admin-tile-icon">📊</span>
+                        <span class="admin-tile-title">Дашборд</span>
+                        <span class="admin-tile-desc">Статистика и последние события</span>
+                    </a>
+                    <a href="/admin/leads" class="admin-tile">
+                        <span class="admin-tile-icon">📥</span>
+                        <span class="admin-tile-title">Заявки</span>
+                        <span class="admin-tile-desc">Управление обращениями</span>
+                    </a>
+                    <a href="/admin/users" class="admin-tile">
+                        <span class="admin-tile-icon">👥</span>
+                        <span class="admin-tile-title">Пользователи</span>
+                        <span class="admin-tile-desc">Список зарегистрированных</span>
+                    </a>
+                    <a href="/admin/incidents" class="admin-tile">
+                        <span class="admin-tile-icon">⚠️</span>
+                        <span class="admin-tile-title">Инциденты</span>
+                        <span class="admin-tile-desc">Журнал безопасности</span>
+                    </a>
+                </div>
+            </section>
+            <% } %>
+
+            <!-- Быстрые действия -->
+            <section class="quick-actions">
+                <h2>Быстрые действия</h2>
+                <div class="actions-grid">
+                    <a href="/#lead-form" class="action-card">
+                        <div class="action-icon">📝</div>
+                        <h3>Оставить заявку</h3>
+                        <p>Опишите ситуацию — я свяжусь с вами в течение рабочего дня</p>
+                    </a>
+
+                    <a href="/services" class="action-card">
+                        <div class="action-icon">📋</div>
+                        <h3>Услуги и цены</h3>
+                        <p>Полный список услуг с фиксированной стоимостью</p>
+                    </a>
+
+                    <a href="/ER" class="action-card">
+                        <div class="action-icon">🛡️</div>
+                        <h3>Демо-модель 152-ФЗ</h3>
+                        <p>Посмотрите, как я защищаю ваши персональные данные</p>
+                    </a>
+
+                    <a href="/profile" class="action-card">
+                        <div class="action-icon">👤</div>
+                        <h3>Профиль</h3>
+                        <p>Управление аккаунтом и настройками безопасности</p>
+                    </a>
+
+                    <% if (user.role === 'admin') { %>
+                    <a href="/admin/incidents" class="action-card">
+                        <div class="action-icon">⚠️</div>
+                        <h3>Журнал инцидентов</h3>
+                        <p>Панель администратора: события безопасности</p>
+                    </a>
+                    <% } %>
+                </div>
+            </section>
+
+            <!-- Полезная информация -->
+            <section class="info-card">
+                <h2>Как это работает</h2>
+                <ol class="steps">
+                    <li>
+                        <strong>Оставьте заявку</strong> — на главной странице,
+                        по телефону или в Telegram.
+                    </li>
+                    <li>
+                        <strong>Первичная консультация</strong> — обсуждаем ситуацию,
+                        оцениваю перспективы, называю стоимость.
+                    </li>
+                    <li>
+                        <strong>Заключаем договор</strong> — фиксированная цена,
+                        чёткие сроки, конфиденциальность.
+                    </li>
+                    <li>
+                        <strong>Работаем</strong> — я беру на себя все юридические
+                        действия, вы получаете результат.
+                    </li>
+                </ol>
+            </section>
+
+            <!-- Контакты -->
+            <section class="contacts-card">
+                <h2>Свяжитесь со мной</h2>
+                <div class="contacts-grid">
+                    <div class="contact-item">
+                        <span class="contact-icon">📞</span>
+                        <a href="tel:+79246193473">+7 (924) 619-34-73</a>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">✉️</span>
+                        <a href="mailto:dmitrievandreu.law@mail.ru">dmitrievandreu.law@mail.ru</a>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">💬</span>
+                        <span>Telegram по номеру телефона</span>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">📍</span>
+                        <span>г. Усть-Кут, Иркутская область</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="dash-footer">
+        <div class="container">
+            <p>&copy; 2026 ИП Дмитриев А.К. Юридические услуги в Усть-Куте.</p>
+            <p><a href="/privacy">Политика конфиденциальности</a></p>
+        </div>
+    </footer>
+</body>
+</html>

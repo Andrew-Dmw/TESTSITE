@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Юридические услуги в Усть-Куте. Консультации, документы, представительство в суде. Дмитриев Андрей Константинович.">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/landing.css">
+    <link rel="icon" href="/images/favicon/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-mark">⚖</span>
+                <span class="logo-text">Юрист в Усть-Куте</span>
+            </a>
+            <nav class="main-nav">
+                <a href="/">Главная</a>
+                <a href="/services">Услуги</a>
+                <a href="/about">Обо мне</a>
+                <a href="/contacts">Контакты</a>
+                <a href="/ER">Демо-модель</a>
+                <% if (user) { %>
+                    <a href="/profile" class="btn-nav">Личный кабинет</a>
+                <% } else { %>
+                    <a href="/login" class="btn-nav">Войти</a>
+                <% } %>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h1>Юридическая помощь в Усть-Куте</h1>
+            <p class="hero-sub">
+                Консультации, составление документов, представительство в суде.<br>
+                Юрист-разработчик: сочетаю правовую экспертизу и защиту персональных данных.
+            </p>
+            <div class="hero-actions">
+                <a href="#lead-form" class="btn btn-primary">Оставить заявку</a>
+                <a href="/services" class="btn btn-secondary">Смотреть услуги</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="services-preview">
+        <div class="container">
+            <h2>Чем я могу помочь</h2>
+            <div class="cards">
+                <div class="card">
+                    <div class="card-icon">📋</div>
+                    <h3>Юридические консультации</h3>
+                    <p>Разбор вашей ситуации, оценка перспектив, пошаговый план действий.</p>
+                    <span class="price">от 1 000 ₽</span>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📄</div>
+                    <h3>Составление документов</h3>
+                    <p>Исковые заявления, договоры, жалобы, претензии, соглашения.</p>
+                    <span class="price">от 3 000 ₽</span>
+                </div>
+                <div class="card">
+                    <div class="card-icon">⚖️</div>
+                    <h3>Представительство в суде</h3>
+                    <p>Ведение дела от подготовки иска до исполнения решения.</p>
+                    <span class="price">от 15 000 ₽</span>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🔒</div>
+                    <h3>Защита персональных данных</h3>
+                    <p>Аудит по 152-ФЗ, составление политик, защита от утечек.</p>
+                    <span class="price">от 5 000 ₽</span>
+                </div>
+            </div>
+            <div class="services-cta">
+                <a href="/services" class="link-more">Полный список услуг и цены →</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="why-me">
+        <div class="container">
+            <h2>Почему я</h2>
+            <div class="features">
+                <div class="feature">
+                    <h3>Юрист + разработчик</h3>
+                    <p>Понимаю не только право, но и технологии. Разработал собственную модель соответствия 152-ФЗ.</p>
+                </div>
+                <div class="feature">
+                    <h3>Работаю в Усть-Куте</h3>
+                    <p>Личный контакт, встречи, представительство в местных судах.</p>
+                </div>
+                <div class="feature">
+                    <h3>Прозрачные цены</h3>
+                    <p>Фиксированная стоимость — вы знаете, сколько заплатите, ещё до начала работы.</p>
+                </div>
+                <div class="feature">
+                    <h3>Конфиденциальность</h3>
+                    <p>Строгое соблюдение адвокатской тайны и защита ваших персональных данных.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="lead-section" id="lead-form">
+        <div class="container">
+            <h2>Оставить заявку</h2>
+            <p class="lead-sub">Опишите ситуацию — я свяжусь с вами в течение рабочего дня.</p>
+
+            <form id="leadForm" class="lead-form" novalidate>
+                <div class="form-row">
+                    <label for="lead-name">Ваше имя *</label>
+                    <input type="text" id="lead-name" name="name" required minlength="2" maxlength="60" autocomplete="name">
+                </div>
+                <div class="form-row">
+                    <label for="lead-contact">Телефон или Telegram *</label>
+                    <input type="text" id="lead-contact" name="contact" required minlength="5" maxlength="100" placeholder="+7... или @username" autocomplete="tel">
+                </div>
+                <div class="form-row">
+                    <label for="lead-message">Кратко о вопросе</label>
+                    <textarea id="lead-message" name="message" rows="4" maxlength="2000" placeholder="Опишите ситуацию в двух-трёх предложениях"></textarea>
+                </div>
+                <div class="consent-group">
+                    <label>
+                        <input type="checkbox" name="privacyConsent" required>
+                        <span>Я согласен с <a href="/privacy" target="_blank" rel="noopener">политикой конфиденциальности</a> *</span>
+                    </label>
+                </div>
+
+                <!-- honeypot -->
+                <input type="text" name="honeypot" class="honeypot" tabindex="-1" autocomplete="off" aria-hidden="true">
+                <!-- источник (utm) -->
+                <input type="hidden" name="source" id="lead-source" value="direct">
+
+                <button type="submit" class="btn btn-primary btn-block" id="leadSubmit">
+                    <span class="btn-text">Отправить заявку</span>
+                    <span class="btn-spinner" hidden></span>
+                </button>
+                <div class="form-message" id="leadMessage" role="alert"></div>
+            </form>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div class="footer-col">
+                <strong>ИП Дмитриев Андрей Константинович</strong>
+                <p>Юридические услуги в г. Усть-Кут</p>
+            </div>
+            <div class="footer-col">
+                <strong>Контакты</strong>
+                <p><a href="tel:+79246193473">+7 (924) 619-34-73</a></p>
+                <p><a href="mailto:dmitrievandreu.law@mail.ru">dmitrievandreu.law@mail.ru</a></p>
+            </div>
+            <div class="footer-col">
+                <strong>Документы</strong>
+                <p><a href="/privacy">Политика конфиденциальности</a></p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 ИП Дмитриев А.К. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="/js/lead-form.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <meta name="description" content="Полный список юридических услуг в Усть-Куте с ценами.">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/landing.css">
+    <link rel="icon" href="/images/favicon/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-mark">⚖</span>
+                <span class="logo-text">Юрист в Усть-Куте</span>
+            </a>
+            <nav class="main-nav">
+                <a href="/">Главная</a>
+                <a href="/services" class="active">Услуги</a>
+                <a href="/about">Обо мне</a>
+                <a href="/contacts">Контакты</a>
+                <a href="/ER">Демо-модель</a>
+                <% if (user) { %>
+                    <a href="/profile" class="btn-nav">Личный кабинет</a>
+                <% } else { %>
+                    <a href="/login" class="btn-nav">Войти</a>
+                <% } %>
+            </nav>
+        </div>
+    </header>
+
+    <section class="page-head">
+        <div class="container">
+            <h1>Услуги и цены</h1>
+            <p>Фиксированные цены. Точная стоимость — после первичной консультации.</p>
+        </div>
+    </section>
+
+    <section class="services-full">
+        <div class="container">
+            <div class="service-group">
+                <h2>Консультации</h2>
+                <table class="price-table">
+                    <tr><td>Устная консультация (30–60 минут)</td><td>1 000 ₽</td></tr>
+                    <tr><td>Письменное правовое заключение</td><td>от 3 000 ₽</td></tr>
+                    <tr><td>Анализ документов, оценка перспектив</td><td>от 2 000 ₽</td></tr>
+                </table>
+            </div>
+
+            <div class="service-group">
+                <h2>Документы</h2>
+                <table class="price-table">
+                    <tr><td>Исковое заявление</td><td>от 3 000 ₽</td></tr>
+                    <tr><td>Претензия, жалоба</td><td>от 2 000 ₽</td></tr>
+                    <tr><td>Договор (проверка / составление)</td><td>от 2 500 ₽</td></tr>
+                    <tr><td>Соглашение, доверенность</td><td>от 1 500 ₽</td></tr>
+                </table>
+            </div>
+
+            <div class="service-group">
+                <h2>Представительство</h2>
+                <table class="price-table">
+                    <tr><td>Судебное представительство (одно заседание)</td><td>от 5 000 ₽</td></tr>
+                    <tr><td>Ведение дела «под ключ» (гражданское)</td><td>от 15 000 ₽</td></tr>
+                    <tr><td>Сопровождение сделок с недвижимостью</td><td>от 10 000 ₽</td></tr>
+                </table>
+            </div>
+
+            <div class="service-group">
+                <h2>Защита персональных данных</h2>
+                <table class="price-table">
+                    <tr><td>Аудит сайта по 152-ФЗ</td><td>от 5 000 ₽</td></tr>
+                    <tr><td>Разработка политики конфиденциальности</td><td>от 3 000 ₽</td></tr>
+                    <tr><td>Сопровождение при утечке данных</td><td>от 10 000 ₽</td></tr>
+                </table>
+            </div>
+
+            <div class="cta-block">
+                <p>Не нашли нужную услугу? Опишите ситуацию — предложу решение.</p>
+                <a href="/#lead-form" class="btn btn-primary">Оставить заявку</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div class="footer-col">
+                <strong>ИП Дмитриев Андрей Константинович</strong>
+                <p>Юридические услуги в г. Усть-Кут</p>
+            </div>
+            <div class="footer-col">
+                <strong>Контакты</strong>
+                <p><a href="tel:+79246193473">+7 (924) 619-34-73</a></p>
+                <p><a href="mailto:dmitrievandreu.law@mail.ru">dmitrievandreu.law@mail.ru</a></p>
+            </div>
+            <div class="footer-col">
+                <strong>Документы</strong>
+                <p><a href="/privacy">Политика конфиденциальности</a></p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 ИП Дмитриев А.К. Все права защищены.</p>
+        </div>
+    </footer>
+</body>
+</html>

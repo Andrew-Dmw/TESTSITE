@@ -3,18 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- CSRF-токен для AJAX-запросов -->
     <meta name="csrf-token" content="<%= csrfToken %>">
-    <title>Формально-юридическая модель</title>
-    <!-- Внешние стили (Font Awesome и наш er.css) -->
+    <title>Демонстрация экспертизы: защита персональных данных</title>
+    <meta name="description" content="Формально-юридическая модель соответствия 152-ФЗ. Демонстрация экспертизы в области защиты персональных данных.">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="/css/er.css">
+    <link rel="icon" href="/images/favicon/favicon.ico" type="image/x-icon">
 </head>
 <body>
 <div class="container">
+
+    <!-- Верхняя навигация -->
+    <div class="top-nav">
+        <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> На главную</a>
+        <% if (user) { %>
+            <a href="/main" class="back-link"><i class="fas fa-user"></i> Личный кабинет</a>
+        <% } else { %>
+            <a href="/login" class="back-link"><i class="fas fa-sign-in-alt"></i> Войти</a>
+        <% } %>
+    </div>
+
     <header class="hero">
-        <h1><i class="fas fa-shield-alt"></i> Формально-юридическая модель защиты данных</h1>
-        <div class="subhead">Разработано в рамках преддипломной практики<br>на основе ФЗ №149 и ФЗ №152</div>
+        <h1><i class="fas fa-shield-alt"></i> Демонстрация экспертизы: защита персональных данных</h1>
+        <div class="subhead">
+            Практическая реализация требований ФЗ №149 и ФЗ №152<br>
+            Собственная разработка: юридическая модель + работающий веб-прототип
+        </div>
         <div class="badge"><i class="far fa-calendar-alt"></i> Актуально на 2026 г.</div>
     </header>
 
@@ -26,7 +40,7 @@
         <button class="tab-btn" data-tab="tab5"><i class="fas fa-sitemap"></i> Управление данными</button>
     </div>
 
-    <!-- Вкладка 1: Нормативно-правовая база -->
+    <!-- Вкладка 1 -->
     <div id="tab1" class="tab-content active">
         <div class="card">
             <h2><i class="fas fa-scroll"></i> Иерархия нормативных актов</h2>
@@ -54,7 +68,7 @@
         </div>
     </div>
 
-    <!-- Вкладка 2: Субъекты и объекты -->
+    <!-- Вкладка 2 -->
     <div id="tab2" class="tab-content">
         <div class="grid-2col">
             <div class="card">
@@ -66,7 +80,7 @@
                     <li><strong>Правоохранительные органы</strong> (МВД, СК, ФСБ)</li>
                     <li><strong>Суд</strong> – разрешение споров</li>
                 </ul>
-                <h2 style="margin-top:30px"><i class="fas fa-database"></i> Объекты защиты</h2>
+                <h2 class="mt-30"><i class="fas fa-database"></i> Объекты защиты</h2>
                 <ul>
                     <li>Персональные данные (общие, специальные, биометрические)</li>
                     <li>Метаданные, идентификаторы (IP, cookie)</li>
@@ -102,9 +116,8 @@
         </div>
     </div>
 
-    <!-- Вкладка 3: Правоприменительная практика -->
+    <!-- Вкладка 3 -->
     <div id="tab3" class="tab-content">
-        <!-- (содержимое без изменений) -->
         <div class="card">
             <h2><i class="fas fa-chart-bar"></i> Статистика применения статей УК РФ (1 полугодие 2025)</h2>
             <table class="stats-table">
@@ -114,7 +127,7 @@
                 <tr><td>273 (вредоносные программы)</td><td>41</td><td>2</td><td>39</td></tr>
                 <tr><td>274.1 (воздействие на КИИ)</td><td>18</td><td>1</td><td>17</td></tr>
             </table>
-            <div style="margin-top:20px; background:#fff3cd; padding:16px; border-radius:16px;">
+            <div class="warning-box">
                 <i class="fas fa-exclamation-triangle"></i> <strong>Вывод:</strong> ≈97% осуждённых получили условные сроки или штрафы.
             </div>
         </div>
@@ -130,10 +143,11 @@
         </div>
     </div>
 
-    <!-- Вкладка 4: Образцы документов -->
+    <!-- Вкладка 4 -->
     <div id="tab4" class="tab-content">
         <div class="card">
             <h2><i class="fas fa-file-signature"></i> Библиотека шаблонов</h2>
+            <p>Скачайте бесплатно — это может пригодиться, если ваши права нарушены.</p>
             <div class="doc-cards">
                 <a href="/samples/complaint_rkn.docx" download class="doc-item">
                     <i class="fas fa-file-alt"></i>
@@ -163,16 +177,15 @@
         </div>
     </div>
 
-    <!-- Вкладка 5: Управление данными (с исправлениями) -->
+    <!-- Вкладка 5 -->
     <div id="tab5" class="tab-content">
         <div class="card">
             <h2><i class="fas fa-user-lock"></i> Реализация прав субъекта ПДн</h2>
-            
+
             <h3>Отзыв согласия на обработку персональных данных</h3>
             <form action="/revoke-consent" method="post">
-                <!-- CSRF-токен защищает POST-запрос -->
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <button  type="submit">Отозвать моё согласие</button>
+                <button type="submit">Отозвать моё согласие</button>
             </form>
             <p class="small">Согласно ст. 9 ФЗ-152, после отзыва оператор обязан удалить ваши данные в течение 30 дней.</p>
 
@@ -183,7 +196,6 @@
             </form>
 
             <h3>Получить копию своих данных (экспорт)</h3>
-            <!-- GET-форма без CSRF-токена, так как он не нужен и не должен попадать в URL -->
             <form action="/export-data" method="get">
                 <button type="submit">Скачать JSON</button>
             </form>
@@ -206,8 +218,8 @@
     </div>
 
     <footer class="footer">
-        <p>&copy; 2026 МО МВД России «Усть-Кутский». Преддипломная практика. Все права защищены.</p>
-        <p>Информация носит справочный характер.</p>
+        <p>&copy; 2026 ИП Дмитриев Андрей Константинович. Юридические услуги в г. Усть-Кут.</p>
+        <p><a href="/privacy">Политика конфиденциальности</a> · <a href="/">На главную</a></p>
     </footer>
 </div>
 

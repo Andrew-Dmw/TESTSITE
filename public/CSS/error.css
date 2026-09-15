@@ -1,0 +1,193 @@
+/* ============================================================
+   Страницы ошибок (404, 500)
+   Тёмно-синий + золото
+   ============================================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0a1628 0%, #1e3a5f 50%, #0f2847 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    color: #1e293b;
+}
+
+.error-container {
+    width: 100%;
+    max-width: 560px;
+}
+
+.error-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 56px 40px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.45),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Золотая полоса сверху */
+.error-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #c9a961 0%, #d4af37 50%, #c9a961 100%);
+}
+
+/* Иконка весов */
+.error-icon {
+    font-size: 3rem;
+    color: #1e3a8a;
+    margin-bottom: 6px;
+    opacity: 0.9;
+    line-height: 1;
+}
+
+/* Крупный код ошибки */
+.error-code {
+    font-size: 5.5rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 4px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #c9a961 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+}
+
+/* Заголовок */
+.error-card h1 {
+    font-size: 1.5rem;
+    color: #0f172a;
+    font-weight: 700;
+    margin-bottom: 14px;
+    letter-spacing: 0.3px;
+}
+
+/* Сообщение */
+.error-message {
+    color: #64748b;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 28px;
+}
+
+/* Разделитель */
+.error-divider {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #c9a961, transparent);
+    margin: 0 auto 28px;
+}
+
+/* Кнопки */
+.error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 28px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .2s, background-color .2s, color .2s;
+    border: 1.5px solid transparent;
+    font-family: inherit;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    color: #ffffff;
+    border-color: #c9a961;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(30, 58, 138, 0.35);
+}
+
+.btn-secondary {
+    background: #ffffff;
+    color: #1e3a8a;
+    border-color: #cbd5e1;
+}
+
+.btn-secondary:hover {
+    background: #f8fafc;
+    color: #1e3a8a;
+    border-color: #c9a961;
+    transform: translateY(-1px);
+}
+
+/* Подсказка */
+.error-hint {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    border-top: 1px solid #eef2f6;
+    padding-top: 20px;
+    margin-top: 8px;
+}
+
+.error-hint a {
+    color: #1e3a8a;
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px solid transparent;
+    transition: color .2s, border-color .2s;
+}
+
+.error-hint a:hover {
+    color: #c9a961;
+    border-bottom-color: #c9a961;
+}
+
+/* ============================================================
+   Адаптив
+   ============================================================ */
+@media (max-width: 480px) {
+    .error-card {
+        padding: 44px 24px 30px;
+        border-radius: 14px;
+    }
+    .error-code {
+        font-size: 4rem;
+        letter-spacing: 2px;
+    }
+    .error-card h1 {
+        font-size: 1.25rem;
+    }
+    .error-icon {
+        font-size: 2.4rem;
+    }
+    .btn {
+        width: 100%;
+        text-align: center;
+    }
+    .error-actions {
+        flex-direction: column;
+    }
+}

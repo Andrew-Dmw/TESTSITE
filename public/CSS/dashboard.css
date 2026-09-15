@@ -1,0 +1,533 @@
+/* ============================================================
+   Стили личного кабинета (/main)
+   Тёмно-синий + золото, юридическая тема
+   ============================================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ============================================================
+   Шапка
+   ============================================================ */
+.dash-header {
+    background: #0a1628;
+    border-bottom: 3px solid #c9a961;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1.15rem;
+}
+
+.logo-mark { font-size: 1.6rem; }
+.logo-text { white-space: nowrap; }
+
+.dash-nav {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.dash-nav a {
+    color: #cbd5e1;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 6px 4px;
+    border-bottom: 2px solid transparent;
+    transition: color .2s, border-color .2s;
+}
+
+.dash-nav a:hover {
+    color: #c9a961;
+    border-bottom-color: #c9a961;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.user-name {
+    color: #ffffff;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.logout-form {
+    display: inline-block;
+}
+
+.btn-logout {
+    background: transparent;
+    color: #c9a961;
+    border: 1.5px solid #c9a961;
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.btn-logout:hover {
+    background: #c9a961;
+    color: #0a1628;
+}
+
+/* ============================================================
+   Основной контент
+   ============================================================ */
+.dash-main {
+    flex: 1;
+    padding: 40px 0 60px;
+}
+
+section {
+    margin-bottom: 30px;
+}
+
+section h2 {
+    font-size: 1.4rem;
+    color: #0f172a;
+    margin-bottom: 18px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+/* ============================================================
+   Приветствие
+   ============================================================ */
+.welcome-card {
+    background: linear-gradient(135deg, #0a1628 0%, #1e3a8a 100%);
+    border-radius: 16px;
+    padding: 32px;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.welcome-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: linear-gradient(180deg, #c9a961 0%, #d4af37 100%);
+}
+
+.welcome-card h1 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.welcome-sub {
+    color: #cbd5e1;
+    margin-bottom: 22px;
+    font-size: 1rem;
+    max-width: 700px;
+}
+
+.welcome-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.meta-item {
+    display: flex;
+    gap: 8px;
+    font-size: 0.92rem;
+    align-items: baseline;
+}
+
+.meta-label {
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+}
+
+.meta-value {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+/* ============================================================
+   Быстрые действия
+   ============================================================ */
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
+}
+
+.action-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 24px;
+    transition: transform .2s, box-shadow .2s, border-color .2s;
+    cursor: pointer;
+    display: block;
+    color: inherit;
+}
+
+.action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(30, 58, 138, 0.12);
+    border-color: #c9a961;
+}
+
+.action-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+}
+
+.action-card h3 {
+    font-size: 1.05rem;
+    color: #0f172a;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.action-card p {
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+/* ============================================================
+   Как это работает
+   ============================================================ */
+.info-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 28px;
+    border: 1px solid #e2e8f0;
+}
+
+.steps {
+    list-style: none;
+    counter-reset: step-counter;
+    padding: 0;
+}
+
+.steps li {
+    counter-increment: step-counter;
+    position: relative;
+    padding: 14px 0 14px 60px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.98rem;
+    color: #334155;
+}
+
+.steps li:last-child {
+    border-bottom: none;
+}
+
+.steps li::before {
+    content: counter(step-counter);
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #1e3a8a;
+    color: #ffffff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.steps li strong {
+    color: #0f172a;
+    display: block;
+    margin-bottom: 3px;
+}
+
+/* ============================================================
+   Контакты
+   ============================================================ */
+.contacts-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 28px;
+    border: 1px solid #e2e8f0;
+}
+
+.contacts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: #f8fafc;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    color: #334155;
+}
+
+.contact-icon {
+    font-size: 1.3rem;
+}
+
+.contact-item a {
+    color: #1e3a8a;
+    font-weight: 500;
+}
+
+.contact-item a:hover {
+    color: #c9a961;
+}
+
+/* ============================================================
+   Подвал
+   ============================================================ */
+.dash-footer {
+    background: #0a1628;
+    color: #94a3b8;
+    padding: 24px 0;
+    text-align: center;
+    font-size: 0.88rem;
+    border-top: 3px solid #c9a961;
+}
+
+.dash-footer p {
+    margin-bottom: 6px;
+}
+
+.dash-footer a {
+    color: #c9a961;
+}
+
+.dash-footer a:hover {
+    color: #ffffff;
+}
+
+/* ============================================================
+   Админ-блок в личном кабинете
+   ============================================================ */
+.admin-block {
+    background: linear-gradient(135deg, #0a1628 0%, #1e3a8a 100%);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 30px;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #c9a961;
+}
+
+.admin-block::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: linear-gradient(180deg, #c9a961 0%, #d4af37 100%);
+}
+
+.admin-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.admin-block-header h2 {
+    font-size: 1.25rem;
+    color: #ffffff;
+    margin-bottom: 4px;
+    font-weight: 700;
+    border: none;
+    padding: 0;
+}
+
+.admin-block-header p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+.admin-block-main-btn {
+    display: inline-block;
+    background: #c9a961;
+    color: #0a1628;
+    padding: 11px 22px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.92rem;
+    text-decoration: none;
+    transition: all .2s;
+    white-space: nowrap;
+}
+
+.admin-block-main-btn:hover {
+    background: #d4af37;
+    color: #0a1628;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(201, 169, 97, 0.35);
+}
+
+.admin-block-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.admin-tile {
+    display: flex;
+    flex-direction: column;
+    padding: 16px 18px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    text-decoration: none;
+    color: #ffffff;
+    transition: all .2s;
+}
+
+.admin-tile:hover {
+    background: rgba(201, 169, 97, 0.15);
+    border-color: #c9a961;
+    transform: translateY(-2px);
+    color: #ffffff;
+}
+
+.admin-tile-icon {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.admin-tile-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 3px;
+    color: #ffffff;
+}
+
+.admin-tile-desc {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.nav-admin-link {
+    color: #c9a961 !important;
+    font-weight: 600 !important;
+    border: 1px solid #c9a961;
+    padding: 4px 12px !important;
+    border-radius: 20px;
+}
+
+.nav-admin-link:hover {
+    background: #c9a961;
+    color: #0a1628 !important;
+    border-bottom-color: #c9a961 !important;
+}
+
+@media (max-width: 600px) {
+    .admin-block {
+        padding: 20px;
+    }
+    .admin-block-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .admin-block-main-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* ============================================================
+   Адаптив
+   ============================================================ */
+@media (max-width: 768px) {
+    .header-inner {
+        justify-content: center;
+    }
+    .dash-nav {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+    }
+    .user-info {
+        width: 100%;
+        justify-content: center;
+    }
+    .welcome-card {
+        padding: 24px 20px;
+    }
+    .welcome-card h1 {
+        font-size: 1.4rem;
+    }
+    .welcome-meta {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .steps li {
+        padding-left: 50px;
+    }
+    .steps li::before {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+}

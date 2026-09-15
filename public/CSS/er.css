@@ -223,6 +223,50 @@ button:hover, .btn-download:hover {
     background: #2563eb;
     transform: scale(1.02);
 }
+/* Замена инлайн-стилей в ER.ejs */
+.mt-30 {
+    margin-top: 30px;
+}
+
+/* Верхняя навигация на странице /ER */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #475569;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 6px 12px;
+    border-radius: 20px;
+    transition: background-color .2s, color .2s;
+}
+
+.back-link:hover {
+    background: #eef2f6;
+    color: #1e3a8a;
+}
+
+.back-link i {
+    font-size: 0.9rem;
+}
+
+.warning-box {
+    margin-top: 20px;
+    background: #fff3cd;
+    padding: 16px;
+    border-radius: 16px;
+}
 .small {
     font-size: 0.85rem;
     color: #64748b;

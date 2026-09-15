@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <title>Вход — Юрист в Усть-Куте</title>
+    <link rel="stylesheet" href="/css/auth.css">
+    <link rel="icon" href="/images/favicon/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="form-box login-box standalone">
+            <h2>Вход в личный кабинет</h2>
+            <p class="subhead">Управляйте своими делами и заявками</p>
+
+            <form id="loginForm" novalidate>
+                <div class="input-group">
+                    <input type="email" name="email" placeholder="Email"
+                           required autocomplete="email" maxlength="254">
+                </div>
+                <div class="input-group">
+                    <input type="password" name="password" placeholder="Пароль"
+                           required autocomplete="current-password" minlength="8">
+                </div>
+
+                <input type="text" name="honeypot" class="honeypot"
+                       tabindex="-1" autocomplete="off" aria-hidden="true">
+
+                <button type="submit" class="btn" id="loginBtn">
+                    <span class="btn-text">Войти</span>
+                    <span class="btn-spinner" hidden></span>
+                </button>
+                <div class="message" id="loginMessage" role="alert"></div>
+            </form>
+
+            <p class="toggle-text">
+                Нет аккаунта? <a href="/register" class="toggle-link">Зарегистрироваться</a>
+            </p>
+            <p class="toggle-text">
+                <a href="/" class="toggle-link">← На главную</a>
+            </p>
+        </div>
+    </div>
+    <script src="/js/auth.js" defer></script>
+</body>
+</html>

@@ -6,7 +6,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mysql = require('mysql2/promise');
 const validator = require('validator');
-const expressLayouts = require('express-ejs-layouts');
 const path = require('path');
 const Logger = require('./logger');
 const session = require('express-session');
@@ -17,21 +16,7 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const cookieParser = require('cookie-parser');
 const nodemailer = require('nodemailer');
-
-// ================================================================
-// Конфигурация Nodemailer (для отправки уведомлений)
-// Использует переменные окружения SMTP_*
-// ================================================================
-
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT),
-    secure: false, // для порта 587 (STARTTLS)
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
+const mailer = require('./mailer');
 
 // ================================================================
 // Pepper – секретная добавка к паролю перед хешированием
@@ -62,7 +47,7 @@ app.use(cors({
 app.use('/.well-known', express.static(path.join(__dirname, '.well-known')));
 
 // ================================================================
-// Настройка шаблонизатора EJS + layouts
+// Настройка шаблонизатора EJS
 // ================================================================
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -85,27 +70,67 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 // ================================================================
-// Layouts для EJS: оборачивает содержимое в layout.ejs
-// ================================================================
-app.use(expressLayouts);
-app.set('layout', 'layout');
-
-// ================================================================
 // CSP через Helmet (исправлено)
 // Убрали 'unsafe-inline' из scriptSrc, исправили styleSrc, добавили нужные шрифты
 // ================================================================
 app.use(
     helmet.contentSecurityPolicy({
+        useDefaults: false,
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://yastatic.net"],
-            styleSrc: ["'self'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
-            imgSrc: ["'self'", "data:", "https://yastatic.net"],
-            connectSrc: ["'self'"],
-            frameSrc: ["'self'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+            frameAncestors: ["'self'"],
+
+            // Скрипты: свои + CDN + Яндекс.Метрика
+            scriptSrc: [
+                "'self'",
+                "https://cdnjs.cloudflare.com",
+                "https://yastatic.net",
+                "https://mc.yandex.ru",
+            ],
+
+            // Стили: свои + Google Fonts + CDN
+            styleSrc: [
+                "'self'",
+                "https://fonts.googleapis.com",
+                "https://cdnjs.cloudflare.com",
+                "https://yastatic.net",
+            ],
+
+            // Шрифты
+            fontSrc: [
+                "'self'",
+                "https://fonts.gstatic.com",
+                "https://cdnjs.cloudflare.com",
+                "https://yastatic.net",
+            ],
+
+            // Картинки: свои + data: + Яндекс
+            imgSrc: [
+                "'self'",
+                "data:",
+                "https://yandex.ru",
+                "https://mc.yandex.ru",
+            ],
+
+            // XHR/fetch/WebSocket — нужно для Метрики
+            connectSrc: [
+                "'self'",
+                "https://mc.yandex.ru",
+                "wss://mc.yandex.ru",
+            ],
+
+            // Фреймы (Метрика иногда использует для вебвизора)
+            frameSrc: [
+                "'self'",
+                "https://mc.yandex.ru",
+                "https://yandex.ru",
+            ],
+
             mediaSrc: ["'self'"],
             objectSrc: ["'none'"],
+            workerSrc: ["'self'"],
         },
     })
 );
@@ -213,11 +238,11 @@ app.use((req, res, next) => {
 // Middleware для проверки авторизации и ролей
 // ================================================================
 function isAuthenticated(req, res, next) {
-    if (req.session.userId) {
-        return next();
-    } else {
-        res.status(401).send({ error: 'Необходима авторизация' });
+    if (req.session.userId) return next();
+    if (req.accepts('html') && !req.is('application/json')) {
+        return res.redirect('/login');
     }
+    res.status(401).json({ error: 'Необходима авторизация' });
 }
 
 function isAdmin(req, res, next) {
@@ -238,11 +263,87 @@ const getClientIp = (req) => {
 // МАРШРУТЫ
 // ================================================================
 
-// Главная страница (форма авторизации)
+// ============================================================
+// ПУБЛИЧНАЯ ЧАСТЬ
+// ============================================================
+
+// Главная страница (лендинг с услугами)
 app.get('/', (req, res) => {
+    res.render('public/landing', {
+        title: 'Юрист в Усть-Куте — Дмитриев Андрей',
+        layout: false,
+        user: req.session.userId ? {
+            name: req.session.userName,
+            email: req.session.userEmail,
+            role: req.session.userRole
+        } : null,
+        csrfToken: res.locals.csrfToken,
+    });
+});
+
+// Страница услуг
+app.get('/services', (req, res) => {
+    res.render('public/services', {
+        title: 'Услуги — Юрист в Усть-Куте',
+        layout: false,
+        user: req.session.userId ? {
+            name: req.session.userName,
+            email: req.session.userEmail,
+            role: req.session.userRole
+        } : null,
+        csrfToken: res.locals.csrfToken,
+    });
+});
+
+// Обо мне
+app.get('/about', (req, res) => {
+    res.render('public/about', {
+        title: 'Обо мне — Дмитриев Андрей',
+        layout: false,
+        user: req.session.userId ? {
+            name: req.session.userName,
+            email: req.session.userEmail,
+            role: req.session.userRole
+        } : null,
+        csrfToken: res.locals.csrfToken,
+    });
+});
+
+// Контакты
+app.get('/contacts', (req, res) => {
+    res.render('public/contacts', {
+        title: 'Контакты — Юрист в Усть-Куте',
+        layout: false,
+        user: req.session.userId ? {
+            name: req.session.userName,
+            email: req.session.userEmail,
+            role: req.session.userRole
+        } : null,
+        csrfToken: res.locals.csrfToken,
+    });
+});
+
+// ============================================================
+// АВТОРИЗАЦИЯ (отдельные страницы)
+// ============================================================
+
+// Страница входа
+app.get('/login', (req, res) => {
+    if (req.session.userId) return res.redirect('/profile');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.render('index', {
-        title: 'Авторизация',
+    res.render('auth/login', {
+        title: 'Вход',
+        csrfToken: res.locals.csrfToken,
+        layout: false,
+    });
+});
+
+// Страница регистрации
+app.get('/register', (req, res) => {
+    if (req.session.userId) return res.redirect('/profile');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.render('auth/register', {
+        title: 'Регистрация',
         csrfToken: res.locals.csrfToken,
         layout: false,
     });
@@ -250,45 +351,45 @@ app.get('/', (req, res) => {
 
 // Политика конфиденциальности
 app.get('/privacy', (req, res) => {
-    res.render('privacy', { 
+    res.render('public/privacy', { 
         title: 'Политика конфиденциальности',
         layout: false
     });
 });
 
 // Главная страница после входа
+// Личный кабинет
 app.get('/main', isAuthenticated, (req, res) => {
-    const cookieConsent = req.cookies?.cookie_consent;
-    const showCookieBanner = !cookieConsent;
-    res.render('main', {
-        title: 'Главная',
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.render('user/main', {
+        title: 'Личный кабинет',
         layout: false,
         csrfToken: res.locals.csrfToken,
         user: {
             name: req.session.userName,
             email: req.session.userEmail,
             role: req.session.userRole
-        },
-        showCookieBanner: showCookieBanner
+        }
     });
 });
 
 // Страница юридической модели (ER)
 app.get('/ER', isAuthenticated, (req, res) => {
-    res.render('ER', {
-        title: "Формально-юридическая модель",
+    res.render('er/index', {
+        title: "Демонстрация экспертизы: защита персональных данных",
         layout: false,
         user: req.session.userId ? {
             email: req.session.userEmail,
             name: req.session.userName,
             role: req.session.userRole
-        } : null
+        } : null,
+        csrfToken: res.locals.csrfToken,
     });
 });
 
 // Профиль пользователя
 app.get('/profile', isAuthenticated, (req, res) => {
-    res.render('profile', {
+    res.render('user/profile', {
         title: 'Профиль пользователя',
         csrfToken: res.locals.csrfToken,
         layout: false,
@@ -302,24 +403,119 @@ app.get('/profile', isAuthenticated, (req, res) => {
 });
 
 // Журнал инцидентов (только для админа)
+// Инциденты
 app.get('/admin/incidents', isAuthenticated, isAdmin, async (req, res) => {
     let connection;
     try {
         connection = await pool.getConnection();
-        const [incidents] = await connection.execute(
-            'SELECT * FROM security_incident_logs ORDER BY detection_time DESC'
-        );
+
+        const status = req.query.status;
+
+        // Фильтр по статусу
+        let sql = 'SELECT * FROM security_incident_logs';
+        const params = [];
+        if (status && ['detected', 'investigating', 'resolved'].includes(status)) {
+            sql += ' WHERE status = ?';
+            params.push(status);
+        }
+        sql += ' ORDER BY detection_time DESC';
+
+        const [incidents] = await connection.execute(sql, params);
+
+        // Счётчики по статусам
+        const [[{ cntDetected }]]      = await connection.execute("SELECT COUNT(*) AS cntDetected FROM security_incident_logs WHERE status='detected'");
+        const [[{ cntInvestigating }]] = await connection.execute("SELECT COUNT(*) AS cntInvestigating FROM security_incident_logs WHERE status='investigating'");
+        const [[{ cntResolved }]]      = await connection.execute("SELECT COUNT(*) AS cntResolved FROM security_incident_logs WHERE status='resolved'");
+        const [[{ cntTotal }]]         = await connection.execute("SELECT COUNT(*) AS cntTotal FROM security_incident_logs");
+
         connection.release();
-        res.render('admin_incidents', {
-            title: 'Журнал инцидентов безопасности',
+
+        res.render('admin/incidents', {
+            title: 'Журнал инцидентов',
             layout: false,
+            csrfToken: res.locals.csrfToken,
+            user: {
+                name: req.session.userName,
+                email: req.session.userEmail,
+                role: req.session.userRole
+            },
             incidents,
-            csrfToken: res.locals.csrfToken
+            currentFilter: status || 'all',
+            counts: {
+                detected: cntDetected,
+                investigating: cntInvestigating,
+                resolved: cntResolved,
+                total: cntTotal
+            }
         });
     } catch (err) {
         if (connection) connection.release();
-        console.error(err);
+        logger.error('Admin incidents error: ' + err.message);
         res.status(500).send('Ошибка загрузки инцидентов');
+    }
+});
+
+// Смена статуса инцидента
+app.post('/admin/incidents/:id/status', isAuthenticated, isAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['detected', 'investigating', 'resolved'].includes(status)) {
+        return res.status(400).json({ error: 'Некорректный статус' });
+    }
+
+    let connection;
+    try {
+        connection = await pool.getConnection();
+
+        // Получаем текущий статус
+        const [rows] = await connection.execute(
+            'SELECT status FROM security_incident_logs WHERE id = ?',
+            [id]
+        );
+
+        if (rows.length === 0) {
+            connection.release();
+            return res.status(404).json({ error: 'Инцидент не найден' });
+        }
+
+        const currentStatus = rows[0].status;
+
+        // Проверяем допустимость перехода
+        const allowedTransitions = {
+            'detected':      ['investigating', 'resolved'],
+            'investigating': ['resolved'],
+            'resolved':      ['detected']
+        };
+
+        if (!allowedTransitions[currentStatus].includes(status)) {
+            connection.release();
+            return res.status(400).json({
+                error: `Нельзя перевести из "${currentStatus}" в "${status}"`
+            });
+        }
+
+        // Обновляем статус и, если переводим в resolved, фиксируем notified_at
+        if (status === 'resolved') {
+            await connection.execute(
+                'UPDATE security_incident_logs SET status = ?, notified_at = COALESCE(notified_at, NOW()) WHERE id = ?',
+                [status, id]
+            );
+        } else {
+            await connection.execute(
+                'UPDATE security_incident_logs SET status = ? WHERE id = ?',
+                [status, id]
+            );
+        }
+
+        connection.release();
+
+        logger.info(`Incident #${id}: статус изменён ${currentStatus} → ${status} (админ: ${req.session.userEmail})`);
+        res.json({ ok: true, from: currentStatus, to: status });
+    } catch (err) {
+        if (connection) connection.release();
+        logger.error('Update incident status error: ' + err.message);
+        res.status(500).json({ error: 'Ошибка обновления' });
     }
 });
 
@@ -449,77 +645,189 @@ app.post('/delete-data', limiter, isAuthenticated, async (req, res) => {
     }
 });
 
-// Экспорт данных пользователя (исправлено: блокировка при подозрительной активности)
-app.get('/export-data', limiter, isAuthenticated, async (req, res) => {
-    const email = req.session.userEmail;
-    if (!email || !validator.isEmail(email)) {
-        return res.status(400).send('Некорректный email в сессии');
-    }
+// ================================================================
+// Выход из аккаунта
+// ================================================================
+app.post('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            logger.error('Ошибка при выходе: ' + err.message);
+            return res.status(500).send('Не удалось выйти');
+        }
+        res.clearCookie('connect.sid'); // имя cookie сессии по умолчанию
+        res.redirect('/');
+    });
+});
 
+// ================================================================
+// АДМИН-ПАНЕЛЬ
+// ================================================================
+
+// Дашборд
+app.get('/admin', isAuthenticated, isAdmin, async (req, res) => {
     let connection;
     try {
         connection = await pool.getConnection();
-        const ip = getClientIp(req);
 
-        // Проверка на подозрительную активность (частые экспорты)
-        const [rows] = await connection.execute(
-            `SELECT COUNT(*) as cnt FROM event_logs 
-             WHERE action = 'data_exported' AND ip_address = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE)`,
-            [ip]
+        const [[{ leadsTotal }]] = await connection.execute('SELECT COUNT(*) AS leadsTotal FROM leads');
+        const [[{ leadsNew }]]   = await connection.execute("SELECT COUNT(*) AS leadsNew FROM leads WHERE status = 'new'");
+        const [[{ usersTotal }]] = await connection.execute('SELECT COUNT(*) AS usersTotal FROM users');
+        const [[{ incidentsTotal }]]    = await connection.execute('SELECT COUNT(*) AS incidentsTotal FROM security_incident_logs');
+        const [[{ incidentsDetected }]] = await connection.execute("SELECT COUNT(*) AS incidentsDetected FROM security_incident_logs WHERE status = 'detected'");
+
+        const [recentLeads] = await connection.execute(
+            'SELECT id, name, contact, status, created_at FROM leads ORDER BY created_at DESC LIMIT 5'
+        );
+        const [recentIncidents] = await connection.execute(
+            'SELECT id, incident_time, description, status, ip_address FROM security_incident_logs ORDER BY incident_time DESC LIMIT 5'
         );
 
-        if (rows[0].cnt >= 3) {
-            // Запись инцидента
-            await connection.execute(
-                `INSERT INTO security_incident_logs (incident_time, description, status, user_email, ip_address)
-                 VALUES (NOW(), ?, 'detected', ?, ?)`,
-                [`Частые экспорты данных (${rows[0].cnt} за минуту) с IP ${ip}`, email, ip]
-            );
-            await notifyDataLeak(email, ip, `С IP ${ip} выполнено ${rows[0].cnt} экспортов за 1 минуту`);
-            connection.release();
-            // Блокируем дальнейший экспорт
-            return res.status(429).json({ error: 'Превышен лимит запросов на экспорт данных' });
-        }
-
-        // Если всё нормально, продолжаем экспорт
-        const [users] = await connection.execute('SELECT id, name, email, created_at FROM users WHERE email = ?', [email]);
-        if (users.length === 0) {
-            connection.release();
-            return res.status(404).send('Пользователь не найден.');
-        }
-        const user = users[0];
-        const [dataRows] = await connection.execute('SELECT field_name, field_value FROM user_data WHERE user_id = ?', [user.id]);
-        const [consents] = await connection.execute(
-            'SELECT purpose, is_active, given_at, revoked_at FROM consents WHERE user_id = ?',
-            [user.id]
-        );
-
-        const exportData = {
-            user: { id: user.id, name: user.name, email: user.email, registered_at: user.created_at },
-            custom_fields: dataRows,
-            consents_history: consents,
-            export_date: new Date().toISOString(),
-            legal_notice: 'Данные предоставлены в соответствии со ст. 14 ФЗ-152 "О персональных данных"'
-        };
-
-        // Логируем факт экспорта
-        const ipLog = ip || '';
-        const ua = req.headers['user-agent'] || '';
-        await connection.execute(
-            'INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
-            [email, 'data_exported', 'Скачана копия ПДн', ipLog, ua]
-        );
         connection.release();
 
-        res.setHeader('Content-disposition', `attachment; filename=personal_data_${email}.json`);
-        res.setHeader('Content-type', 'application/json');
-        res.send(JSON.stringify(exportData, null, 2));
-    } catch (error) {
+        res.render('admin/dashboard', {
+            title: 'Панель управления',
+            layout: false,
+            csrfToken: res.locals.csrfToken,
+            user: {
+                name: req.session.userName,
+                email: req.session.userEmail,
+                role: req.session.userRole
+            },
+            stats: { leadsTotal, leadsNew, usersTotal, incidentsTotal, incidentsDetected },
+            recentLeads,
+            recentIncidents
+        });
+    } catch (err) {
         if (connection) connection.release();
-        console.error(error);
-        res.status(500).redirect('/Server-error');
+        logger.error('Admin dashboard error: ' + err.message);
+        res.status(500).send('Ошибка загрузки дашборда');
     }
 });
+
+// Заявки
+app.get('/admin/leads', isAuthenticated, isAdmin, async (req, res) => {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const status = req.query.status;
+        let sql = 'SELECT * FROM leads';
+        const params = [];
+        if (status && ['new', 'in_progress', 'done', 'rejected'].includes(status)) {
+            sql += ' WHERE status = ?';
+            params.push(status);
+        }
+        sql += ' ORDER BY created_at DESC';
+        const [leads] = await connection.execute(sql, params);
+
+        const [[{ cntNew }]]        = await connection.execute("SELECT COUNT(*) AS cntNew FROM leads WHERE status='new'");
+        const [[{ cntInProgress }]] = await connection.execute("SELECT COUNT(*) AS cntInProgress FROM leads WHERE status='in_progress'");
+        const [[{ cntDone }]]       = await connection.execute("SELECT COUNT(*) AS cntDone FROM leads WHERE status='done'");
+        const [[{ cntRejected }]]   = await connection.execute("SELECT COUNT(*) AS cntRejected FROM leads WHERE status='rejected'");
+
+        connection.release();
+
+        res.render('admin/leads', {
+            title: 'Заявки',
+            layout: false,
+            csrfToken: res.locals.csrfToken,
+            user: {
+                name: req.session.userName,
+                email: req.session.userEmail,
+                role: req.session.userRole
+            },
+            leads,
+            currentFilter: status || 'all',
+            counts: { new: cntNew, in_progress: cntInProgress, done: cntDone, rejected: cntRejected }
+        });
+    } catch (err) {
+        if (connection) connection.release();
+        logger.error('Admin leads error: ' + err.message);
+        res.status(500).send('Ошибка загрузки заявок');
+    }
+});
+
+// Смена статуса заявки
+app.post('/admin/leads/:id/status', isAuthenticated, isAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!['new', 'in_progress', 'done', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'Некорректный статус' });
+    }
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        await connection.execute('UPDATE leads SET status = ? WHERE id = ?', [status, id]);
+        connection.release();
+        res.json({ ok: true });
+    } catch (err) {
+        if (connection) connection.release();
+        logger.error('Update lead status error: ' + err.message);
+        res.status(500).json({ error: 'Ошибка обновления' });
+    }
+});
+
+// Пользователи
+app.get('/admin/users', isAuthenticated, isAdmin, async (req, res) => {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const [users] = await connection.execute(
+            'SELECT id, email, name, role, privacy_consent_given, created_at FROM users ORDER BY created_at DESC'
+        );
+        connection.release();
+        res.render('admin/users', {
+            title: 'Пользователи',
+            layout: false,
+            csrfToken: res.locals.csrfToken,
+            user: {
+                name: req.session.userName,
+                email: req.session.userEmail,
+                role: req.session.userRole
+            },
+            users
+        });
+    } catch (err) {
+        if (connection) connection.release();
+        logger.error('Admin users error: ' + err.message);
+        res.status(500).send('Ошибка загрузки пользователей');
+    }
+});
+
+// ================================================================
+// Проверка SMTP — тестовое письмо
+// ================================================================
+app.get('/admin/test-email', isAuthenticated, isAdmin, async (req, res) => {
+    const to = req.query.to || req.session.userEmail;
+
+    const result = await mailer.sendMail({
+        to,
+        subject: 'Тестовое письмо — проверка SMTP',
+        text: `Это тестовое письмо с сайта «Юрист в Усть-Куте». Если вы его видите — SMTP работает.`,
+        html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <h2 style="color: #1e3a8a;">✅ SMTP работает!</h2>
+                <p>Это тестовое письмо с сайта «Юрист в Усть-Куте».</p>
+                <p>Время отправки: ${new Date().toLocaleString('ru-RU')}</p>
+                <p style="color: #64748b; font-size: 13px;">
+                    Если вы получили это письмо — почтовая рассылка настроена корректно.
+                </p>
+            </div>
+        `,
+    });
+
+    res.json({
+        smtpEnabled: mailer.SMTP_ENABLED,
+        to,
+        result,
+        env: {
+            SMTP_HOST: process.env.SMTP_HOST || null,
+            SMTP_PORT: process.env.SMTP_PORT || null,
+            SMTP_USER: process.env.SMTP_USER ? process.env.SMTP_USER.slice(0, 5) + '...' : null,
+            ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'dmitrievandreu.law@mail.ru (по умолчанию)',
+        },
+    });
+});
+
 
 // Обратная связь (JSON-эндпоинт)
 app.post('/submit-feedback', limiter, express.json(), isAuthenticated, async (req, res) => {
@@ -540,6 +848,82 @@ app.post('/submit-feedback', limiter, express.json(), isAuthenticated, async (re
     } catch (error) {
         console.error("Ошибка БД при сохранении фидбека:", error);
         res.status(500).json({ error: "Database error" });
+    }
+});
+
+// ============================================================
+// Приём заявок с сайта (лиды)
+// ============================================================
+app.post('/submit-lead', limiter, express.json(), async (req, res) => {
+    const { name, contact, message, privacyConsent, source } = req.body;
+
+    // Honeypot
+    if (req.body.honeypot) {
+        logger.warn('Honeypot triggered on /submit-lead, IP: ' + getClientIp(req));
+        return res.status(400).json({ error: 'Invalid request' });
+    }
+
+    // Валидация
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+        return res.status(400).json({ error: 'Укажите имя (минимум 2 символа)' });
+    }
+    if (!contact || typeof contact !== 'string' || contact.trim().length < 5) {
+        return res.status(400).json({ error: 'Укажите телефон или Telegram' });
+    }
+    if (!privacyConsent) {
+        return res.status(400).json({ error: 'Необходимо согласие с политикой конфиденциальности' });
+    }
+
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const ip = getClientIp(req) || '';
+        const ua = req.headers['user-agent'] || '';
+        const cleanSource = (source || 'direct').toString().slice(0, 100);
+
+        const [result] = await connection.execute(
+            `INSERT INTO leads (name, contact, message, source, ip_address, user_agent)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+                validator.escape(name.trim()),
+                validator.escape(contact.trim()),
+                message ? validator.escape(message.trim().slice(0, 2000)) : null,
+                cleanSource,
+                ip,
+                ua
+            ]
+        );
+        const leadId = result.insertId;
+        connection.release();
+
+        // Отправляем уведомление вам на email
+        try {
+            // Уведомление администратору (в фоне)
+            mailer.sendLeadNotification({
+                id: leadId,
+                name: name.trim(),
+                contact: contact.trim(),
+                message: message ? message.trim() : null,
+                source: cleanSource,
+                ip: ip,
+            }).then((result) => {
+                if (result.ok) {
+                    logger.info(`Lead #${leadId}: notification sent`);
+                } else if (result.skipped) {
+                    logger.info(`Lead #${leadId}: notification skipped (SMTP не настроен)`);
+                } else {
+                    logger.error(`Lead #${leadId}: notification failed — ${result.error}`);
+                }
+            });
+        } catch (mailErr) {
+            logger.error('Ошибка отправки email о заявке: ' + mailErr.message);
+        }
+
+        res.status(200).json({ ok: true, id: leadId });
+    } catch (err) {
+        if (connection) connection.release();
+        logger.error('Ошибка сохранения заявки: ' + err.message);
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
@@ -597,7 +981,20 @@ app.post('/register', limiter, async (req, res) => {
         req.session.userName = name.trim();
 
         connection.release();
-        return res.redirect('/main'); // хотя это JSON-ответ, лучше вернуть JSON с редиректом
+        // Отправляем приветственное письмо (не блокирует ответ)
+        mailer.sendWelcomeEmail({
+            name: name.trim(),
+            email: email,
+        }).then((result) => {
+            if (result.ok) {
+                logger.info(`Welcome email sent to ${email}, id: ${result.messageId}`);
+            } else if (result.skipped) {
+                logger.info(`Welcome email skipped (SMTP не настроен) для ${email}`);
+            } else {
+                logger.error(`Welcome email failed for ${email}: ${result.error}`);
+            }
+        });
+        return res.redirect('/profile'); // хотя это JSON-ответ, лучше вернуть JSON с редиректом
     } catch (error) {
         if (connection) connection.release();
         console.error(error);
@@ -640,7 +1037,7 @@ app.post('/login', limiter, async (req, res) => {
         req.session.userEmail = user.email;
         req.session.userName = user.name;
         connection.release();
-        return res.redirect('/main'); // аналогично регистрации, лучше вернуть JSON с URL
+        return res.redirect('/profile'); // аналогично регистрации, лучше вернуть JSON с URL
     } catch (error) {
         if (connection) connection.release();
         console.error('Login error:', error); 
@@ -651,12 +1048,12 @@ app.post('/login', limiter, async (req, res) => {
 
 // Страница благодарности после отправки отзыва
 app.get('/thank-you', (req, res) => {
-    res.render('thank-you', { title: 'Спасибо за ваш отзыв!', redirectUrl: '/main', layout: false });
+    res.render('public/thank-you', { title: 'Спасибо за ваш отзыв!', redirectUrl: '/main', layout: false });
 });
 
 // Страница 500 (внутренняя ошибка сервера)
 app.get('/Server-error', (req, res) => {
-    res.status(500).render('500', { title: "Внутренняя ошибка сервера" });
+    res.status(500).render('errors/500', { title: "Внутренняя ошибка сервера" });
 });
 
 // ================================================================
@@ -688,7 +1085,7 @@ app.use((err, req, res, next) => {
 // Обработчик 404 – страница не найдена
 // ================================================================
 app.use((req, res, next) => {
-    res.status(404).render('404', { title: 'Страница не найдена' });
+    res.status(404).render('errors/404', { title: 'Страница не найдена' });
 });
 
 // ================================================================

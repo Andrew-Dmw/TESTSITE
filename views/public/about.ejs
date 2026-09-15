@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/landing.css">
+    <link rel="icon" href="/images/favicon/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-mark">⚖</span>
+                <span class="logo-text">Юрист в Усть-Куте</span>
+            </a>
+            <nav class="main-nav">
+                <a href="/">Главная</a>
+                <a href="/services">Услуги</a>
+                <a href="/about" class="active">Обо мне</a>
+                <a href="/contacts">Контакты</a>
+                <a href="/ER">Демо-модель</a>
+                <% if (user) { %>
+                    <a href="/profile" class="btn-nav">Личный кабинет</a>
+                <% } else { %>
+                    <a href="/login" class="btn-nav">Войти</a>
+                <% } %>
+            </nav>
+        </div>
+    </header>
+
+    <section class="page-head">
+        <div class="container">
+            <h1>Обо мне</h1>
+            <p>Дмитриев Андрей Константинович — юрист в Усть-Куте</p>
+        </div>
+    </section>
+
+    <section class="about-content">
+        <div class="container">
+            <div class="about-grid">
+                <div class="about-text">
+                    <h2>Кто я</h2>
+                    <p>Я — юрист-разработчик. Сочетаю юридическую экспертизу в области уголовного и гражданского права с практическими навыками в веб-разработке и информационной безопасности.</p>
+
+                    <h2>Образование</h2>
+                    <p><strong>Специальность:</strong> 40.02.04 «Юриспруденция»<br>
+                    <strong>Учебное заведение:</strong> Иркутский гуманитарно-технический колледж<br>
+                    <strong>Период:</strong> 2022 – 2026 гг.</p>
+
+                    <h2>Компетенции</h2>
+                    <ul>
+                        <li>Подготовка процессуальных документов и юридических заключений</li>
+                        <li>Анализ договоров и правовая экспертиза</li>
+                        <li>Глубокое знание УК РФ и УПК РФ</li>
+                        <li>Защита персональных данных (152-ФЗ)</li>
+                        <li>Аудит информационной безопасности</li>
+                    </ul>
+
+                    <h2>Почему стоит обратиться</h2>
+                    <p>Я не просто юрист. Я разработал собственную формально-юридическую модель соответствия 152-ФЗ — это значит, что я понимаю не только право, но и технологии. Вы можете посмотреть <a href="/ER">демонстрацию модели</a> прямо на сайте.</p>
+                </div>
+                <div class="about-side">
+                    <div class="info-card">
+                        <h3>Контакты</h3>
+                        <p><a href="tel:+79246193473">+7 (924) 619-34-73</a></p>
+                        <p><a href="mailto:dmitrievandreu.law@mail.ru">dmitrievandreu.law@mail.ru</a></p>
+                    </div>
+                    <div class="info-card">
+                        <h3>Готов к работе</h3>
+                        <p>Удалённо, офлайн и гибридно. Принимаю заявки по Усть-Куту и Иркутской области.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div class="footer-col">
+                <strong>ИП Дмитриев Андрей Константинович</strong>
+                <p>Юридические услуги в г. Усть-Кут</p>
+            </div>
+            <div class="footer-col">
+                <strong>Контакты</strong>
+                <p><a href="tel:+79246193473">+7 (924) 619-34-73</a></p>
+                <p><a href="mailto:dmitrievandreu.law@mail.ru">dmitrievandreu.law@mail.ru</a></p>
+            </div>
+            <div class="footer-col">
+                <strong>Документы</strong>
+                <p><a href="/privacy">Политика конфиденциальности</a></p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 ИП Дмитриев А.К. Все права защищены.</p>
+        </div>
+    </footer>
+</body>
+</html>
