@@ -182,6 +182,7 @@
         <div class="card">
             <h2><i class="fas fa-user-lock"></i> Реализация прав субъекта ПДн</h2>
 
+        <% if (user) { %>
             <h3>Отзыв согласия на обработку персональных данных</h3>
             <form action="/revoke-consent" method="post">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -196,9 +197,10 @@
             </form>
 
             <h3>Получить копию своих данных (экспорт)</h3>
-            <form action="/export-data" method="get">
-                <button type="submit">Скачать JSON</button>
-            </form>
+            <a href="/export-data" class="btn-secondary">Скачать JSON</a>
+        <% } else { %>
+            <p>Управление персональными данными доступно после <a href="/login">входа в аккаунт</a>.</p>
+        <% } %>
 
             <h3>Взаимодействие субъектов при утечке данных</h3>
             <div class="interaction-scheme">

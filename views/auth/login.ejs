@@ -15,6 +15,7 @@
             <p class="subhead">Управляйте своими делами и заявками</p>
 
             <form id="loginForm" novalidate>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <div class="input-group">
                     <input type="email" name="email" placeholder="Email"
                            required autocomplete="email" maxlength="254">

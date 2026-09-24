@@ -1,3 +1,5 @@
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
 (function () {
     'use strict';
 
@@ -44,7 +46,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'CSRF-Token': csrfToken || '',
+                        'X-CSRF-Token': csrfToken || '',
                     },
                     credentials: 'same-origin',
                     body: JSON.stringify({ status: newStatus }),

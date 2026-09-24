@@ -110,6 +110,7 @@
             <p class="lead-sub">Опишите ситуацию — я свяжусь с вами в течение рабочего дня.</p>
 
             <form id="leadForm" class="lead-form" novalidate>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <div class="form-row">
                     <label for="lead-name">Ваше имя *</label>
                     <input type="text" id="lead-name" name="name" required minlength="2" maxlength="60" autocomplete="name">

@@ -1,21 +1,19 @@
-// ================================================================
+﻿// ================================================================
 // Подключение необходимых модулей
 // ================================================================
 const config = require('./config');
 const express = require('express');
-const bodyParser = require('body-parser');
 const mysql = require('mysql2/promise');
 const validator = require('validator');
 const path = require('path');
 const Logger = require('./logger');
 const session = require('express-session');
-const csurf = require('csurf');
+const { doubleCsrf } = require('csrf-csrf');
 const rateLimit = require("express-rate-limit");
 const helmet = require('helmet');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const cookieParser = require('cookie-parser');
-const nodemailer = require('nodemailer');
 const mailer = require('./mailer');
 
 // ================================================================
@@ -30,15 +28,20 @@ if (!pepper) {
 
 // Создаём экземпляр Express
 const app = express();
+app.disable('x-powered-by');
 
 // ================================================================
 // Базовая настройка CORS
 // Указываем конкретный origin для безопасности, credentials – для кук
 // ================================================================
+const allowedOrigins = [process.env.FRONTEND_URL || 'https://localhost'];
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000', // если фронтенд на другом домене
-    credentials: true, // разрешаем передачу кук (сессия)
-    allowedHeaders: ['Content-Type', 'X-CSRF-Token'], // имена заголовков, которые можно слать
+    origin: (origin, cb) => {
+        if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+        cb(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'X-CSRF-Token'],
 }));
 
 // ================================================================
@@ -168,68 +171,97 @@ const logger = new Logger({
 // Конфигурация окружения (порт и хост)
 // ================================================================
 const PORT = config.port;
-const HOSTNAME = config.HOSTNAME;
+const HOSTNAME = config.hostname;
 
 // ================================================================
 // Сессии (исправлено: secure зависит от окружения, sameSite: 'lax')
 // ================================================================
 app.use(session({
+    name: 'sid',
     secret: config.sessionSecret,
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     cookie: {
-        secure: process.env.NODE_ENV === 'production', // true только при HTTPS
+        secure: true,
         httpOnly: true,
-        sameSite: 'lax', // безопаснее для навигации
-    }
+        sameSite: 'strict',
+        maxAge: 2 * 60 * 60 * 1000,
+    },
 }));
 
-// ================================================================
-// Функция уведомления об утечке данных (заглушка, пишет в консоль)
-// В реальном проекте здесь может быть отправка email администратору
-// ================================================================
-async function notifyDataLeak(email, ip, reason) {
-    console.log(`\n🚨 [УТЕЧКА ПДн] Обнаружена подозрительная активность:
-        👤 Пользователь: ${email}
-        🌐 IP-адрес: ${ip}
-        📝 Причина: ${reason}
-        ⏰ Время: ${new Date().toISOString()}
-    `);
-    // Здесь можно добавить отправку письма через transporter
-}
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        logger.info(`${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms`);
+    });
+    next();
+});
 
 // ================================================================
 // Rate limiting (ограничение количества запросов)
 // В тестовой среде лимит выше, чтобы не мешать тестам
 // ================================================================
 const maxRequests = process.env.RATE_LIMIT_MAX
-    ? parseInt(process.env.RATE_LIMIT_MAX)
+    ? parseInt(process.env.RATE_LIMIT_MAX, 10)
     : (process.env.NODE_ENV === 'test' ? 10000 : 100);
 
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 минут
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
     max: maxRequests,
-    message: "Слишком много запросов..."
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: 'Слишком много попыток. Попробуйте позже.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+const publicFormLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 /*
 CSRF-защита (исправлено)
 CSRF-защита: применяется ко всем не-JSON запросам
 */
-const csrfProtection = csurf({ cookie: true });  // ← cookie: true
-
-// Применяем csurf только к не‑JSON запросам
-app.use((req, res, next) => {
-    if (req.is('application/json')) {
-        return next();
-    }
-    csrfProtection(req, res, next);
+const {
+    generateCsrfToken,          // было generateToken
+    doubleCsrfProtection,
+} = doubleCsrf({
+    getSecret: () => config.sessionSecret,
+    getSessionIdentifier: (req) => req.sessionID,
+    cookieName: '__Host-psifi.x-csrf-token',
+    cookieOptions: {
+        sameSite: 'strict',
+        path: '/',
+        secure: true,
+        httpOnly: true,
+    },
+    size: 64,
+    ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
 });
 
-// Добавляет токен в шаблоны для всех не‑JSON запросов
 app.use((req, res, next) => {
-    if (!req.is('application/json')) {
-        res.locals.csrfToken = req.csrfToken();
+    res.locals.csrfToken = generateCsrfToken(req, res);   // было generateToken
+    next();
+});
+app.use(doubleCsrfProtection);
+
+// Дополнительно: проверка Origin для всех POST/PUT/DELETE
+app.use((req, res, next) => {
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+        const origin = req.get('origin') || req.get('referer') || '';
+        const allowed = process.env.FRONTEND_URL || 'https://localhost';
+        // Пропускаем запросы без Origin/Referer только с localhost (curl, healthcheck)
+        if (origin && !origin.startsWith(allowed)) {
+            return res.status(403).json({ error: 'CSRF check failed' });
+        }
     }
     next();
 });
@@ -255,9 +287,7 @@ function isAdmin(req, res, next) {
 // ================================================================
 // Вспомогательная функция получения IP клиента
 // ================================================================
-const getClientIp = (req) => {
-    return req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-};
+const getClientIp = (req) => req.ip;
 
 // ================================================================
 // МАРШРУТЫ
@@ -520,7 +550,7 @@ app.post('/admin/incidents/:id/status', isAuthenticated, isAdmin, async (req, re
 });
 
 // Логирование согласия на куки (исправлено: теперь сохраняет в БД)
-app.post('/log-cookie-consent', limiter, express.json(), isAuthenticated, async (req, res) => {
+app.post('/log-cookie-consent', apiLimiter, express.json(), isAuthenticated, async (req, res) => {
     const { consent } = req.body;
     const email = req.session.userEmail;
     const ip = getClientIp(req);
@@ -544,7 +574,7 @@ app.post('/log-cookie-consent', limiter, express.json(), isAuthenticated, async 
 });
 
 // Сохранение отзыва (форма)
-app.post('/save-data', limiter, isAuthenticated, async (req, res) => {
+app.post('/save-data', apiLimiter, isAuthenticated, async (req, res) => {
     // Honeypot-проверка (боты заполнят скрытое поле)
     if (req.body.honeypot) {
         logger.warn('Honeypot triggered on /save-data, IP: ' + getClientIp(req));
@@ -553,10 +583,10 @@ app.post('/save-data', limiter, isAuthenticated, async (req, res) => {
     try {
         const { Z, Like, COMMENT, dateTime } = req.body;
         // Валидация и экранирование
-        const validatedZ = Z ? validator.escape(Z) : null;
-        const validatedLike = Like ? validator.escape(Like) : null;
-        const validatedCOMMENT = COMMENT ? validator.escape(COMMENT) : null;
-        const validatedDateTime = dateTime ? validator.escape(dateTime) : null;
+        const validatedZ = Z ? String(Z).slice(0, 255) : null;
+        const validatedLike = Like ? String(Like).slice(0, 255) : null;
+        const validatedCOMMENT = COMMENT ? String(COMMENT).slice(0, 2000) : null;
+        const validatedDateTime = dateTime ? String(dateTime).slice(0, 50) : null;
 
         const connection = await pool.getConnection();
         await connection.execute(
@@ -573,7 +603,7 @@ app.post('/save-data', limiter, isAuthenticated, async (req, res) => {
 });
 
 // Отзыв согласий на обработку ПДн
-app.post('/revoke-consent', limiter, isAuthenticated, async (req, res) => {
+app.post('/revoke-consent', apiLimiter, isAuthenticated, async (req, res) => {
     const email = req.session.userEmail;
     if (!email || !validator.isEmail(email)) {
         return res.status(400).send('Некорректный email в сессии');
@@ -611,7 +641,7 @@ app.post('/revoke-consent', limiter, isAuthenticated, async (req, res) => {
 });
 
 // Удаление персональных данных
-app.post('/delete-data', limiter, isAuthenticated, async (req, res) => {
+app.post('/delete-data', apiLimiter, isAuthenticated, async (req, res) => {
     const email = req.session.userEmail;
     if (!email || !validator.isEmail(email)) {
         return res.status(400).send('Некорректный email в сессии');
@@ -830,7 +860,7 @@ app.get('/admin/test-email', isAuthenticated, isAdmin, async (req, res) => {
 
 
 // Обратная связь (JSON-эндпоинт)
-app.post('/submit-feedback', limiter, express.json(), isAuthenticated, async (req, res) => {
+app.post('/submit-feedback', publicFormLimiter, express.json(), isAuthenticated, async (req, res) => {
     const { feedback } = req.body;
     if (!feedback || typeof feedback !== 'string' || feedback.trim() === '') {
         return res.status(400).json({ error: "No feedback provided" });
@@ -854,7 +884,7 @@ app.post('/submit-feedback', limiter, express.json(), isAuthenticated, async (re
 // ============================================================
 // Приём заявок с сайта (лиды)
 // ============================================================
-app.post('/submit-lead', limiter, express.json(), async (req, res) => {
+app.post('/submit-lead', publicFormLimiter, express.json(), async (req, res) => {
     const { name, contact, message, privacyConsent, source } = req.body;
 
     // Honeypot
@@ -928,7 +958,7 @@ app.post('/submit-lead', limiter, express.json(), async (req, res) => {
 });
 
 // Регистрация пользователя
-app.post('/register', limiter, async (req, res) => {
+app.post('/register', authLimiter, async (req, res) => {
     const { email, name, password, privacyConsent } = req.body;
     if (!email || !validator.isEmail(email)) {
         return res.status(400).json({ error: 'Некорректный email' });
@@ -959,7 +989,7 @@ app.post('/register', limiter, async (req, res) => {
 
         // Хеширование пароля с пиппером
         const pepperedPassword = password + pepper;
-        const saltRounds = 10;
+        const saltRounds = 12;
         const passwordHash = await bcrypt.hash(pepperedPassword, saltRounds);
 
         const [result] = await connection.execute(
@@ -970,17 +1000,39 @@ app.post('/register', limiter, async (req, res) => {
 
         // Запись согласия
         await connection.execute(
-            'INSERT INTO consents (user_id, purpose, version, is_active, given_at, ip_address, user_agent) VALUES (?, ?, ?, ?, NOW(), ?, ?)',
-            [userId, 'privacy_policy', 'v1.0', true, getClientIp(req), req.headers['user-agent'] || '']
+            `INSERT INTO consents (user_id, purpose, version, is_active, given_at, ip_address, user_agent)
+            VALUES (?, ?, ?, TRUE, NOW(), ?, ?)
+            ON DUPLICATE KEY UPDATE
+                version = VALUES(version),
+                is_active = TRUE,
+                given_at = NOW(),
+                revoked_at = NULL,
+                ip_address = VALUES(ip_address),
+                user_agent = VALUES(user_agent)`,
+            [userId, 'privacy_policy', 'v1.0', getClientIp(req), req.headers['user-agent'] || '']
         );
 
         // Сразу авторизуем пользователя
-        req.session.userRole = 'user';
-        req.session.userId = userId;
-        req.session.userEmail = email;
-        req.session.userName = name.trim();
-
         connection.release();
+        req.session.regenerate((err) => {
+            if (err) {
+                logger.error('Session regenerate error: ' + err.message);
+                return res.status(500).json({ error: 'Ошибка сервера' });
+            }
+            req.session.userId = userId;
+            req.session.userRole = 'user';
+            req.session.userEmail = email;
+            req.session.userName = name.trim();
+            req.session.save((saveErr) => {
+                if (saveErr) {
+                    logger.error('Session save error: ' + saveErr.message);
+                    return res.status(500).json({ error: 'Ошибка сервера' });
+                }
+                // письмо отправляем уже после сохранения сессии
+                mailer.sendWelcomeEmail({ name: name.trim(), email }).catch(() => {});
+                return res.redirect('/profile');
+            });
+        });
         // Отправляем приветственное письмо (не блокирует ответ)
         mailer.sendWelcomeEmail({
             name: name.trim(),
@@ -994,7 +1046,6 @@ app.post('/register', limiter, async (req, res) => {
                 logger.error(`Welcome email failed for ${email}: ${result.error}`);
             }
         });
-        return res.redirect('/profile'); // хотя это JSON-ответ, лучше вернуть JSON с редиректом
     } catch (error) {
         if (connection) connection.release();
         console.error(error);
@@ -1003,7 +1054,7 @@ app.post('/register', limiter, async (req, res) => {
 });
 
 // Вход пользователя (JSON)
-app.post('/login', limiter, async (req, res) => {
+app.post('/login', authLimiter, async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
         return res.status(400).json({ error: 'Email и пароль обязательны' });
@@ -1032,17 +1083,70 @@ app.post('/login', limiter, async (req, res) => {
             return res.status(401).json({ error: 'Неверный email или пароль' });
         }
 
-        req.session.userRole = user.role;
-        req.session.userId = user.id;
-        req.session.userEmail = user.email;
-        req.session.userName = user.name;
         connection.release();
-        return res.redirect('/profile'); // аналогично регистрации, лучше вернуть JSON с URL
+        req.session.regenerate((err) => {
+            if (err) {
+                logger.error('Session regenerate error: ' + err.message);
+                return res.status(500).json({ error: 'Ошибка сервера' });
+            }
+            req.session.userId = user.id;
+            req.session.userRole = user.role;
+            req.session.userEmail = user.email;
+            req.session.userName = user.name;
+            req.session.save((saveErr) => {
+                if (saveErr) {
+                    logger.error('Session save error: ' + saveErr.message);
+                    return res.status(500).json({ error: 'Ошибка сервера' });
+                }
+                return res.redirect('/profile');   // ← ТОЛЬКО ЗДЕСЬ
+            });
+        });
     } catch (error) {
         if (connection) connection.release();
         console.error('Login error:', error); 
         console.error(error);
         return res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+app.get('/export-data', isAuthenticated, async (req, res) => {
+    const email = req.session.userEmail;
+    if (!email || !validator.isEmail(email)) {
+        return res.status(400).json({ error: 'Некорректная сессия' });
+    }
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const [users] = await connection.execute(
+            'SELECT id, email, name, role, privacy_consent_given, privacy_consent_date, created_at FROM users WHERE email = ?',
+            [email]
+        );
+        if (users.length === 0) { connection.release(); return res.status(404).json({ error: 'Не найдено' }); }
+        const userId = users[0].id;
+
+        const [consents]   = await connection.execute('SELECT purpose, version, is_active, given_at, revoked_at FROM consents WHERE user_id = ?', [userId]);
+        const [userData]   = await connection.execute('SELECT field_name, field_value FROM user_data WHERE user_id = ?', [userId]);
+        const [events]     = await connection.execute('SELECT action, details, created_at FROM event_logs WHERE user_email = ? ORDER BY created_at DESC LIMIT 500', [email]);
+
+        await connection.execute(
+            'INSERT INTO event_logs (user_email, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
+            [email, 'data_exported', 'Экспорт ПДн субъектом', req.ip, req.headers['user-agent'] || '']
+        );
+        connection.release();
+
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="my-data-${userId}.json"`);
+        res.json({
+            exportedAt: new Date().toISOString(),
+            user: users[0],
+            consents,
+            userData,
+            events,
+        });
+    } catch (err) {
+        if (connection) connection.release();
+        logger.error('Export-data error: ' + err.message);
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
@@ -1060,20 +1164,12 @@ app.get('/Server-error', (req, res) => {
 // Обработчик ошибок CSRF (если где-то всё же промахнулись)
 // ================================================================
 app.use((err, req, res, next) => {
-    if (err.code === 'EBADCSRFTOKEN') {
-        res.status(403).send('Form tampered with');
-    } else {
-        next(err);
+    if (err.code === 'EBADCSRFTOKEN' || err.statusCode === 403) {
+        return res.status(403).send('Form tampered with');
     }
+    next(err);
 });
 
-// ================================================================
-// Логирование всех запросов (после всех маршрутов, чтобы не дублироваться)
-// ================================================================
-app.use((req, res, next) => {
-    logger.info(`${req.method} ${req.url}`);
-    next();
-});
 
 // Обработчик необработанных ошибок
 app.use((err, req, res, next) => {
@@ -1094,13 +1190,12 @@ app.use((req, res, next) => {
 const start = () => {
     try {
         app.listen(PORT, '0.0.0.0', () => {
-            console.log(`✅ HTTP Server started on: http://localhost:${PORT}`);
+            console.log(`✅ HTTP Server started on: http://${HOSTNAME}:${PORT}`);
             console.log(`Process PID: ${process.pid}`);
             logger.info('server start');
         });
     } catch (e) {
         logger.error(`Server error: ${e.message}`);
-        console.error('Login error:', error);
         console.error(e);
     }
 };

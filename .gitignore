@@ -1,4 +1,43 @@
-node_modules
+cd C:\Users\annab\TESTSITE
+
+@'
+# Node
+node_modules/
+
+# Environment (keep .env.example)
 .env
-черновик
-my-logs
+.env.*
+!.env.example
+
+# SSL certificates and private keys — NEVER commit
+nginx/ssl/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Logs
+my-logs/
+*.log
+
+# Docker artifacts
+*.tar
+*.tar.gz
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Temporary recovery files
+*.BROKEN
+*.RESTORED
+inspect_*.json
+'@ | Out-File -Encoding utf8 .gitignore
+
+# Проверка, что приватный ключ игнорируется
+git check-ignore -v nginx/ssl/localhost+2-key.pem
+# ожидаем: .gitignore:X:nginx/ssl/    nginx/ssl/localhost+2-key.pem

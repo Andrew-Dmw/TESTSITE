@@ -1,3 +1,5 @@
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
 (function () {
     'use strict';
 
@@ -55,7 +57,10 @@
         try {
             const res = await fetch('/submit-lead', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken,
+                },
                 credentials: 'same-origin',
                 body: JSON.stringify(data),
             });

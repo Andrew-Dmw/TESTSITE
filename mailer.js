@@ -4,6 +4,16 @@
 
 const nodemailer = require('nodemailer');
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 const SMTP_ENABLED = !!(
     process.env.SMTP_HOST &&
     process.env.SMTP_USER &&
@@ -39,7 +49,7 @@ async function sendMail({ to, subject, html, text }) {
 
     try {
         const info = await transporter.sendMail({
-            from: `"Юрист в Усть-Куте" <${FROM}>`,
+            from: `"Юрист в Усть-Куте" <${escapeHtml(FROM)}>`,
             to,
             subject,
             text,
@@ -59,7 +69,7 @@ async function sendWelcomeEmail({ name, email }) {
     const subject = 'Добро пожаловать на сайт «Юрист в Усть-Куте»';
 
     const text = `
-Здравствуйте, ${name}!
+Здравствуйте, ${escapeHtml(name)}!
 
 Спасибо за регистрацию на сайте «Юрист в Усть-Куте».
 
@@ -68,7 +78,7 @@ async function sendWelcomeEmail({ name, email }) {
 - управлять своими персональными данными (152-ФЗ);
 - просматривать образцы юридических документов.
 
-Личный кабинет: ${process.env.FRONTEND_URL || 'https://localhost'}/main
+Личный кабинет: ${escapeHtml(process.env.FRONTEND_URL || 'https://localhost')}/main
 
 Если у вас возникнут вопросы — просто ответьте на это письмо.
 
@@ -105,7 +115,7 @@ async function sendWelcomeEmail({ name, email }) {
             <h1>Юрист в Усть-Куте</h1>
         </div>
         <div class="content">
-            <h2>Здравствуйте, ${name}!</h2>
+            <h2>Здравствуйте, ${escapeHtml(name)}!</h2>
             <p>Спасибо за регистрацию на сайте. Ваш аккаунт успешно создан.</p>
             <p><strong>Что теперь доступно:</strong></p>
             <ul class="list">
@@ -115,7 +125,7 @@ async function sendWelcomeEmail({ name, email }) {
                 <li>Работать с демонстрационной моделью защиты данных</li>
             </ul>
             <p style="text-align:center">
-                <a href="${process.env.FRONTEND_URL || 'https://localhost'}/main" class="btn">Перейти в личный кабинет</a>
+                <a href="${escapeHtml(process.env.FRONTEND_URL || 'https://localhost')}/main" class="btn">Перейти в личный кабинет</a>
             </p>
             <p>Если у вас возникнут вопросы — просто ответьте на это письмо.</p>
         </div>
@@ -137,20 +147,20 @@ async function sendWelcomeEmail({ name, email }) {
 // Уведомление администратору о новой заявке
 // ================================================================
 async function sendLeadNotification(lead) {
-    const subject = `Новая заявка №${lead.id} с сайта`;
+    const subject = `Новая заявка №${escapeHtml(lead.id)} с сайта`;
 
     const text = `
 Новая заявка с сайта!
 
-ID: ${lead.id}
-Имя: ${lead.name}
-Контакт: ${lead.contact}
-Сообщение: ${lead.message || '(не указано)'}
-Источник: ${lead.source || 'direct'}
-IP: ${lead.ip || '—'}
-Время: ${new Date().toLocaleString('ru-RU')}
+ID: ${escapeHtml(lead.id)}
+Имя: ${escapeHtml(lead.name)}
+Контакт: ${escapeHtml(lead.contact)}
+Сообщение: ${escapeHtml(lead.message || '(не указано)')}
+Источник: ${escapeHtml(lead.source || 'direct')}
+IP: ${escapeHtml(lead.ip || '—')}
+Время: ${escapeHtml(new Date().toLocaleString('ru-RU'))}
 
-Открыть в админке: ${process.env.FRONTEND_URL || 'https://localhost'}/admin/leads
+Открыть в админке: ${escapeHtml(process.env.FRONTEND_URL || 'https://localhost')}/admin/leads
 `.trim();
 
     const html = `
@@ -174,35 +184,35 @@ IP: ${lead.ip || '—'}
 <body>
     <div class="container">
         <div class="header">
-            <h1>📥 Новая заявка №${lead.id}</h1>
+            <h1>📥 Новая заявка №${escapeHtml(lead.id)}</h1>
         </div>
         <div class="content">
             <div class="row">
                 <span class="label">Имя</span>
-                <span class="value">${lead.name}</span>
+                <span class="value">${escapeHtml(lead.name)}</span>
             </div>
             <div class="row">
                 <span class="label">Контакт</span>
-                <span class="value">${lead.contact}</span>
+                <span class="value">${escapeHtml(lead.contact)}</span>
             </div>
             <div class="row">
                 <span class="label">Сообщение</span>
-                <span class="value">${lead.message || '(не указано)'}</span>
+                <span class="value">${escapeHtml(lead.message || '(не указано)')}</span>
             </div>
             <div class="row">
                 <span class="label">Источник</span>
-                <span class="value">${lead.source || 'direct'}</span>
+                <span class="value">${escapeHtml(lead.source || 'direct')}</span>
             </div>
             <div class="row">
                 <span class="label">IP</span>
-                <span class="value">${lead.ip || '—'}</span>
+                <span class="value">${escapeHtml(lead.ip || '—')}</span>
             </div>
             <div class="row">
                 <span class="label">Время</span>
-                <span class="value">${new Date().toLocaleString('ru-RU')}</span>
+                <span class="value">${escapeHtml(new Date().toLocaleString('ru-RU'))}</span>
             </div>
             <p style="text-align:center">
-                <a href="${process.env.FRONTEND_URL || 'https://localhost'}/admin/leads" class="btn">Открыть в админке</a>
+                <a href="${escapeHtml(process.env.FRONTEND_URL || 'https://localhost')}/admin/leads" class="btn">Открыть в админке</a>
             </p>
         </div>
     </div>

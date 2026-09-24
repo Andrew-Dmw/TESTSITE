@@ -15,6 +15,7 @@
             <p class="subhead">Создайте личный кабинет для работы с заявками</p>
 
             <form id="registerForm" novalidate>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <div class="input-group">
                     <input type="text" name="name" placeholder="Ваше имя"
                            required minlength="2" maxlength="60" autocomplete="name">
