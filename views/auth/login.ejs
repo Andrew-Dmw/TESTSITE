@@ -16,23 +16,22 @@
 
             <form id="loginForm" novalidate>
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                
                 <div class="input-group">
                     <input type="email" name="email" placeholder="Email"
                            required autocomplete="email" maxlength="254">
                 </div>
                 <div class="input-group">
-                    <input type="password" name="password" placeholder="Пароль"
-                           required autocomplete="current-password" minlength="8">
+                    <input type="password" name="password" placeholder="Пароль" required autocomplete="current-password" minlength="8">
                 </div>
 
-                <input type="text" name="honeypot" class="honeypot"
-                       tabindex="-1" autocomplete="off" aria-hidden="true">
+                <input type="text" name="honeypot" class="honeypot" tabindex="-1" autocomplete="off" aria-hidden="true">
 
                 <button type="submit" class="btn" id="loginBtn">
                     <span class="btn-text">Войти</span>
                     <span class="btn-spinner" hidden></span>
                 </button>
-                <div class="message" id="loginMessage" role="alert"></div>
+                <div class="form-message" id="loginMessage" role="alert"></div>
             </form>
 
             <p class="toggle-text">

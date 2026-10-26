@@ -9,6 +9,9 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribut
     const submitBtn = document.getElementById('leadSubmit');
     const messageEl = document.getElementById('leadMessage');
     const sourceInput = document.getElementById('lead-source');
+    if (utmSource && sourceInput) {
+        sourceInput.value = utmSource + (utmMedium ? '/' + utmMedium : '');
+    } else if (document.referrer && sourceInput && !document.referrer.includes(window.location.hostname)){};
 
     // Определяем источник из UTM-метки
     const urlParams = new URLSearchParams(window.location.search);
@@ -20,6 +23,12 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribut
         try {
             sourceInput.value = 'referrer:' + new URL(document.referrer).hostname;
         } catch (e) { /* ignore */ }
+    }
+    
+    function setMessage(text, type = 'error') {
+    if (!messageEl) return; // ← защита
+    messageEl.textContent = text;
+    messageEl.className = 'form-message ' + type;
     }
 
     function setMessage(text, type = 'error') {
@@ -80,4 +89,5 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribut
             setLoading(false);
         }
     });
+
 })();

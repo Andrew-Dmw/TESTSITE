@@ -2,3 +2,7 @@ ssl/
 *.pem
 *.key
 *.crt
+node_modules
+*.md
+LICENSE
+*.env

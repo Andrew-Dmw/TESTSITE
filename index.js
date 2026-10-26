@@ -231,7 +231,7 @@ CSRF-защита (исправлено)
 CSRF-защита: применяется ко всем не-JSON запросам
 */
 const {
-    generateCsrfToken,          // было generateToken
+    generateCsrfToken,       
     doubleCsrfProtection,
 } = doubleCsrf({
     getSecret: () => config.sessionSecret,
@@ -292,7 +292,6 @@ const getClientIp = (req) => req.ip;
 // ================================================================
 // МАРШРУТЫ
 // ================================================================
-
 // ============================================================
 // ПУБЛИЧНАЯ ЧАСТЬ
 // ============================================================
@@ -885,10 +884,17 @@ app.post('/submit-feedback', publicFormLimiter, express.json(), isAuthenticated,
 // Приём заявок с сайта (лиды)
 // ============================================================
 app.post('/submit-lead', publicFormLimiter, express.json(), async (req, res) => {
-    const { name, contact, message, privacyConsent, source } = req.body;
+    const {
+        name,
+        contact,
+        message,
+        privacyConsent,
+        source,
+        honeypot,
+    } = req.body;
 
     // Honeypot
-    if (req.body.honeypot) {
+    if (honeypot) {
         logger.warn('Honeypot triggered on /submit-lead, IP: ' + getClientIp(req));
         return res.status(400).json({ error: 'Invalid request' });
     }
@@ -959,7 +965,22 @@ app.post('/submit-lead', publicFormLimiter, express.json(), async (req, res) => 
 
 // Регистрация пользователя
 app.post('/register', authLimiter, async (req, res) => {
-    const { email, name, password, privacyConsent } = req.body;
+    // 1. Достаём все поля из body, включая токен Turnstile
+    const {
+        email,
+        name,
+        password,
+        privacyConsent,
+        honeypot,
+    } = req.body;
+
+    // 2. Проверяем honeypot
+    if (honeypot) {
+        logger.warn('Honeypot triggered on /register, IP: ' + getClientIp(req));
+        return res.status(400).json({ error: 'Invalid request' });
+    }
+
+    // 4. Базовая валидация (email, name, password)
     if (!email || !validator.isEmail(email)) {
         return res.status(400).json({ error: 'Некорректный email' });
     }
@@ -969,13 +990,8 @@ app.post('/register', authLimiter, async (req, res) => {
     if (!password || password.length < 8) {
         return res.status(400).json({ error: 'Пароль должен быть не менее 8 символов' });
     }
-
     if (!privacyConsent) {
         return res.status(400).json({ error: 'Необходимо согласие с политикой конфиденциальности' });
-    }
-    if (req.body.honeypot) {
-        logger.warn('Honeypot triggered on /register, IP: ' + getClientIp(req));
-        return res.status(400).json({ error: "Invalid request" });
     }
 
     let connection;
@@ -1029,23 +1045,23 @@ app.post('/register', authLimiter, async (req, res) => {
                     return res.status(500).json({ error: 'Ошибка сервера' });
                 }
                 // письмо отправляем уже после сохранения сессии
-                mailer.sendWelcomeEmail({ name: name.trim(), email }).catch(() => {});
+            mailer.sendWelcomeEmail({ name: name.trim(), email })
+            .then((result) => {
+                if (result.ok) {
+                    logger.info(`Welcome email sent to ${email}, id: ${result.messageId}`);
+                } else if (result.skipped) {
+                    logger.info(`Welcome email skipped (SMTP не настроен) для ${email}`);
+                } else {
+                    logger.error(`Welcome email failed for ${email}: ${result.error}`);
+                }
+            })
+            .catch((mailErr) => {
+                logger.error('Welcome email fatal: ' + mailErr.message);
+            });
                 return res.redirect('/profile');
             });
         });
-        // Отправляем приветственное письмо (не блокирует ответ)
-        mailer.sendWelcomeEmail({
-            name: name.trim(),
-            email: email,
-        }).then((result) => {
-            if (result.ok) {
-                logger.info(`Welcome email sent to ${email}, id: ${result.messageId}`);
-            } else if (result.skipped) {
-                logger.info(`Welcome email skipped (SMTP не настроен) для ${email}`);
-            } else {
-                logger.error(`Welcome email failed for ${email}: ${result.error}`);
-            }
-        });
+
     } catch (error) {
         if (connection) connection.release();
         console.error(error);
@@ -1055,11 +1071,17 @@ app.post('/register', authLimiter, async (req, res) => {
 
 // Вход пользователя (JSON)
 app.post('/login', authLimiter, async (req, res) => {
-    const { email, password } = req.body;
+    const {
+        email,
+        password,
+        honeypot,
+    } = req.body;
+    
+
     if (!email || !password) {
         return res.status(400).json({ error: 'Email и пароль обязательны' });
     }
-    if (req.body.honeypot) {
+    if (honeypot) {
         logger.warn('Honeypot triggered on /login, IP: ' + getClientIp(req));
         return res.status(400).json({ error: "Invalid request" });
     }

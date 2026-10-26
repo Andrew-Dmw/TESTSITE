@@ -149,9 +149,7 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribut
                     setMessage(registerMsg, res.data.error || 'Не удалось зарегистрироваться');
                 }
             } catch (e) {
-                setMessage(registerMsg, 'Сетевая ошибка. Попробуйте позже.');
-            } finally {
-                setLoading(registerBtn, false);
+                setMessage(registerMsg, 'Сетевая ошибка. Попробуйте позже');      
             }
         });
 
